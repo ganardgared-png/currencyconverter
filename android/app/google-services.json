@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "695528784213",
+    "project_id": "smart-expenses-plan-492511",
+    "storage_bucket": "smart-expenses-plan-492511.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:695528784213:android:d125c8c31d9eb463b2efdc",
+        "android_client_info": {
+          "package_name": "com.smart_expenses_plan.dailyscheduler.pro"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "695528784213-46crvh8evneccjprg6lrhr1g3a158ubl.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.smart_expenses_plan.dailyscheduler.pro",
+            "certificate_hash": "212bfdf4dd410e526ab5e84abc3f8a270c6de813"
+          }
+        },
+        {
+          "client_id": "695528784213-49lf42j7o1o0dqno3qeiabtgg9tkv8fa.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBAoGAES36tgyKKvNeMiRWUlZE8TwwsjK0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "695528784213-49lf42j7o1o0dqno3qeiabtgg9tkv8fa.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

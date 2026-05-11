@@ -1,0 +1,112 @@
+name: smart_expenses_plan
+description: A comprehensive expense planning app
+version: 1.0.1+2
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter_local_notifications: ^21.0.0
+  timezone: ^0.11.0
+  math_expressions: ^2.4.0
+  fl_chart: ^0.64.0
+  file_picker: ^10.3.10
+  share_plus: ^7.2.0
+  path_provider: ^2.1.1
+  encrypt: ^5.0.3
+  pointycastle: ^3.7.3
+  csv: ^5.0.2
+  excel: ^2.1.0
+  pdf: ^3.10.7
+  printing: ^5.11.1
+  flutter:
+    sdk: flutter
+  
+  # UI
+  cupertino_icons: ^1.0.6
+  google_fonts: ^6.1.0
+  google_mobile_ads: ^7.0.0
+  flutter_svg: ^2.0.9
+  animations: ^2.0.8
+  shimmer: ^3.0.0
+  flutter_staggered_animations: ^1.1.0
+  
+  # State Management
+  flutter_bloc: ^8.1.3
+  equatable: ^2.0.5
+  
+  # Database
+  sqflite: ^2.3.0
+  path: ^1.8.3
+  shared_preferences: ^2.2.2
+  flutter_secure_storage: ^9.0.0
+  
+  # Authentication
+  local_auth: ^2.1.7
+  biometric_storage: ^5.0.0
+  pin_code_fields: ^8.0.1
+  pattern_lock: ^2.0.0
+  
+  # Calendar
+  table_calendar: ^3.0.9
+  syncfusion_flutter_calendar: ^33.1.44
+  
+  # Charts & Graphs
+  syncfusion_flutter_charts: ^33.1.44
+  
+  # Utils
+  intl: ^0.20.2
+  currency_picker: ^2.0.20
+  provider: ^6.1.1
+  url_launcher: ^6.2.1
+  image_picker: ^1.0.5
+  http: ^1.6.0
+  
+  # Export
+  
+  # Backup
+  googleapis: ^11.4.0
+  google_sign_in: ^6.1.5
+  onesignal_flutter: ^5.0.4
+  
+  # Encryption
+  crypto: ^3.0.3
+  
+  # Localization
+  flutter_localizations:
+    sdk: flutter
+  easy_localization: ^3.0.3
+  go_router: ^7.1.1
+  
+  # Permissions
+  permission_handler: ^11.0.1
+  
+  # Utilities
+  connectivity_plus: ^5.0.1
+  device_info_plus: ^9.1.1
+  package_info_plus: ^9.0.0
+  uuid: ^4.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+  build_runner: ^2.4.7
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/translations/
+  
+  fonts:
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins-Regular.ttf
+        - asset: assets/fonts/Poppins-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Poppins-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Poppins-Bold.ttf
+          weight: 700

@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Expenses Plan - Privacy Policy & Terms of Service</title>
+    <meta name="description" content="Privacy Policy and Terms of Service for Smart Expenses Plan, a comprehensive expense planning mobile application.">
+    <meta name="keywords" content="Smart Expenses Plan, privacy policy, terms of service, expense tracking app, mobile app privacy">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        header {
+            background-color: #2c3e50;
+            color: #fff;
+            padding: 1rem 0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+        }
+        nav ul li {
+            margin: 0 15px;
+        }
+        nav ul li a {
+            color: #fff;
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+        nav ul li a:hover {
+            color: #3498db;
+        }
+        .burger {
+            display: none;
+            cursor: pointer;
+        }
+        .burger div {
+            width: 25px;
+            height: 3px;
+            background-color: #fff;
+            margin: 5px;
+            transition: 0.3s;
+        }
+        section {
+            padding: 100px 0 50px;
+            min-height: 100vh;
+        }
+        #home {
+            background: radial-gradient(ellipse at center, #0c0c0c 0%, #1a1a2e 25%, #16213e 50%, #0f0f23 75%, #000000 100%);
+            color: #fff;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        #home::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(3px 3px at 20px 30px, #fff, transparent),
+                radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.8), transparent),
+                radial-gradient(1px 1px at 90px 40px, #fff, transparent),
+                radial-gradient(2px 2px at 130px 80px, rgba(255,255,255,0.9), transparent),
+                radial-gradient(1px 1px at 160px 30px, #fff, transparent),
+                radial-gradient(3px 3px at 200px 90px, rgba(255,255,255,0.7), transparent),
+                radial-gradient(2px 2px at 250px 60px, #fff, transparent),
+                radial-gradient(1px 1px at 280px 20px, rgba(255,255,255,0.8), transparent),
+                radial-gradient(2px 2px at 320px 80px, #fff, transparent),
+                radial-gradient(1px 1px at 360px 40px, rgba(255,255,255,0.9), transparent),
+                radial-gradient(3px 3px at 400px 70px, #fff, transparent),
+                radial-gradient(2px 2px at 450px 30px, rgba(255,255,255,0.7), transparent),
+                radial-gradient(1px 1px at 480px 90px, #fff, transparent),
+                radial-gradient(2px 2px at 520px 50px, rgba(255,255,255,0.8), transparent),
+                radial-gradient(1px 1px at 560px 20px, #fff, transparent),
+                radial-gradient(3px 3px at 600px 80px, rgba(255,255,255,0.9), transparent),
+                radial-gradient(2px 2px at 650px 40px, #fff, transparent),
+                radial-gradient(1px 1px at 680px 70px, rgba(255,255,255,0.7), transparent),
+                radial-gradient(2px 2px at 720px 30px, #fff, transparent),
+                radial-gradient(1px 1px at 760px 90px, rgba(255,255,255,0.8), transparent),
+                /* Additional twinkling stars */
+                radial-gradient(1px 1px at 100px 100px, rgba(255,255,255,0.6), transparent),
+                radial-gradient(2px 2px at 300px 100px, rgba(255,255,255,0.8), transparent),
+                radial-gradient(1px 1px at 500px 100px, rgba(255,255,255,0.7), transparent),
+                radial-gradient(3px 3px at 700px 100px, rgba(255,255,255,0.9), transparent);
+            background-repeat: repeat;
+            background-size: 800px 120px;
+            animation: twinkle 3s ease-in-out infinite alternate;
+        }
+        #home::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 30% 40%, rgba(138, 43, 226, 0.15) 0%, transparent 60%),
+                radial-gradient(circle at 70% 60%, rgba(75, 0, 130, 0.12) 0%, transparent 55%),
+                radial-gradient(circle at 50% 80%, rgba(25, 25, 112, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(147, 112, 219, 0.08) 0%, transparent 45%);
+            animation: nebula 25s ease-in-out infinite;
+        }
+        #home .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 800px;
+            animation: fadeInUp 1.5s ease-out, floatContent 6s ease-in-out infinite;
+        }
+        #home h1 {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px rgba(255,255,255,0.5), 0 0 40px rgba(138, 43, 226, 0.3);
+            background: linear-gradient(45deg, #fff, #e0e0e0, #fff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: glow 3s ease-in-out infinite alternate, slideInFromLeft 1s ease-out 0.5s both;
+        }
+        #home .subtitle {
+            font-size: 1.4rem;
+            margin-bottom: 30px;
+            opacity: 0.9;
+            font-weight: 300;
+            color: #b794f6;
+            text-shadow: 0 0 10px rgba(183, 148, 246, 0.5);
+            animation: fadeInScale 1s ease-out 1s both;
+        }
+        #home p {
+            font-size: 1.2rem;
+            max-width: 600px;
+            margin: 0 auto 40px;
+            line-height: 1.8;
+            opacity: 0.95;
+            color: #e2e8f0;
+            animation: fadeInUp 1s ease-out 1.5s both;
+        }
+        #home .cta-button {
+            display: inline-block;
+            background: rgba(138, 43, 226, 0.2);
+            color: #fff;
+            padding: 15px 30px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 2px solid rgba(138, 43, 226, 0.5);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 20px rgba(138, 43, 226, 0.3);
+            animation: pulseGlow 4s ease-in-out infinite, fadeInScale 1s ease-out 2s both;
+        }
+        #home .cta-button:hover {
+            background: rgba(138, 43, 226, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(138, 43, 226, 0.6), 0 10px 20px rgba(0,0,0,0.2);
+        }
+        @keyframes twinkle {
+            0% { opacity: 0.3; }
+            50% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+        @keyframes nebula {
+            0% { transform: scale(1) rotate(0deg); }
+            25% { transform: scale(1.05) rotate(90deg); }
+            50% { transform: scale(1.1) rotate(180deg); }
+            75% { transform: scale(0.95) rotate(270deg); }
+            100% { transform: scale(1) rotate(360deg); }
+        }
+        @keyframes glow {
+            from { text-shadow: 0 0 20px rgba(255,255,255,0.5), 0 0 40px rgba(138, 43, 226, 0.3); }
+            to { text-shadow: 0 0 30px rgba(255,255,255,0.7), 0 0 60px rgba(138, 43, 226, 0.5), 0 0 80px rgba(138, 43, 226, 0.2); }
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes floatContent {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+        }
+        @keyframes slideInFromLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        @keyframes pulseGlow {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(138, 43, 226, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 30px rgba(138, 43, 226, 0.5), 0 0 40px rgba(138, 43, 226, 0.2);
+            }
+        }
+        #about {
+            background-color: #fff;
+        }
+        #about h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #2c3e50;
+        }
+        #about .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .feature {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .feature h3 {
+            color: #3498db;
+            margin-bottom: 10px;
+        }
+        #privacy, #terms {
+            background-color: #f9f9f9;
+        }
+        #privacy h2, #terms h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #2c3e50;
+        }
+        .policy-content, .terms-content {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .policy-content h3, .terms-content h3 {
+            color: #3498db;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        .policy-content p, .terms-content p, .policy-content ul, .terms-content ul {
+            margin-bottom: 15px;
+        }
+        .policy-content ul, .terms-content ul {
+            padding-left: 20px;
+        }
+        .policy-content li, .terms-content li {
+            margin-bottom: 5px;
+        }
+        #contact {
+            background-color: #2c3e50;
+            color: #fff;
+            text-align: center;
+        }
+        #contact h2 {
+            margin-bottom: 30px;
+        }
+        #contact p {
+            margin-bottom: 20px;
+        }
+        #contact a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        footer {
+            background-color: #34495e;
+            color: #fff;
+            text-align: center;
+            padding: 20px 0;
+        }
+        footer p {
+            margin-bottom: 10px;
+        }
+        .scroll-to-top {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #3498db;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+            cursor: pointer;
+            display: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .scroll-to-top:hover {
+            background-color: #2980b9;
+        }
+        @media (max-width: 768px) {
+            nav ul {
+                flex-direction: column;
+                position: absolute;
+                right: 0;
+                top: 70px;
+                background-color: #2c3e50;
+                width: 200px;
+                display: none;
+            }
+            nav ul.show {
+                display: flex;
+            }
+            .burger {
+                display: block;
+                position: absolute;
+                right: 20px;
+                top: 20px;
+            }
+            #home h1 {
+                font-size: 2.5rem;
+            }
+            #home .subtitle {
+                font-size: 1.1rem;
+            }
+            #home p {
+                font-size: 1rem;
+            }
+            .policy-content, .terms-content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="container">
+            <ul id="nav-menu">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#privacy">Privacy Policy</a></li>
+                <li><a href="#terms">Terms of Service</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+            <div class="burger" id="burger">
+                <div></div>
+                <div></div>
+                <div></div>
+            </div>
+        </nav>
+    </header>
+
+    <section id="home">
+        <div class="container">
+            <div class="hero-content">
+                <h1>Smart Expenses Plan</h1>
+                <p class="subtitle">Your Personal Finance Companion</p>
+                <p>Welcome to the official website for Smart Expenses Plan. Here you can find our Privacy Policy and Terms of Service. This comprehensive expense planning app helps you manage your finances effectively and securely.</p>
+                <a href="#about" class="cta-button">Learn More About the App</a>
+            </div>
+        </div>
+    </section>
+
+    <section id="about">
+        <div class="container">
+            <h2>About Smart Expenses Plan</h2>
+            <p>Smart Expenses Plan is a powerful mobile application designed to help users track, manage, and plan their expenses efficiently. Built with Flutter, it offers a seamless experience across Android and iOS devices.</p>
+            <div class="features">
+                <div class="feature">
+                    <h3>Expense Tracking</h3>
+                    <p>Easily log and categorize your daily expenses with intuitive interfaces and powerful search capabilities.</p>
+                </div>
+                <div class="feature">
+                    <h3>Data Visualization</h3>
+                    <p>View your spending patterns with beautiful charts and graphs powered by advanced charting libraries.</p>
+                </div>
+                <div class="feature">
+                    <h3>Secure Authentication</h3>
+                    <p>Protect your financial data with biometric authentication, PIN codes, and pattern locks.</p>
+                </div>
+                <div class="feature">
+                    <h3>Cloud Backup</h3>
+                    <p>Securely backup your data to Google Drive and restore it across devices.</p>
+                </div>
+                <div class="feature">
+                    <h3>Export & Share</h3>
+                    <p>Export your expense reports to CSV, Excel, or PDF formats and share them easily.</p>
+                </div>
+                <div class="feature">
+                    <h3>Multi-language Support</h3>
+                    <p>Available in multiple languages including English and Swahili for a global user base.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="privacy">
+        <div class="container">
+            <h2>Privacy Policy</h2>
+            <div class="policy-content">
+                <p><strong>Last updated: April 25, 2026</strong></p>
+                
+                <h3>1. Introduction</h3>
+                <p>Smart Expenses Plan ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mobile application.</p>
+                
+                <h3>2. Information We Collect</h3>
+                <p>We may collect the following types of information:</p>
+                <ul>
+                    <li><strong>Personal Information:</strong> When you sign in with Google, we may collect your name, email address, and profile picture.</li>
+                    <li><strong>Expense Data:</strong> Information about your expenses, including amounts, categories, dates, and descriptions that you enter into the app.</li>
+                    <li><strong>Device Information:</strong> Information about your device, including device type, operating system, unique device identifiers, and mobile network information.</li>
+                    <li><strong>Usage Data:</strong> Information about how you use the app, such as features accessed, time spent, and user interactions.</li>
+                    <li><strong>Location Data:</strong> Approximate location information if you grant location permissions (used for currency detection and localized features).</li>
+                </ul>
+                
+                <h3>3. How We Use Your Information</h3>
+                <p>We use the collected information for the following purposes:</p>
+                <ul>
+                    <li>To provide and maintain our expense tracking service</li>
+                    <li>To personalize your experience and improve the app</li>
+                    <li>To process authentication and secure your account</li>
+                    <li>To enable cloud backup and synchronization features</li>
+                    <li>To display personalized advertisements through Google AdMob</li>
+                    <li>To send notifications and updates (with your consent)</li>
+                    <li>To analyze usage patterns and improve our services</li>
+                    <li>To comply with legal obligations</li>
+                </ul>
+                
+                <h3>4. Information Sharing and Disclosure</h3>
+                <p>We do not sell, trade, or otherwise transfer your personal information to third parties except in the following circumstances:</p>
+                <ul>
+                    <li><strong>Service Providers:</strong> We may share information with trusted third-party service providers who assist us in operating our app (e.g., Google for authentication and cloud storage, OneSignal for notifications).</li>
+                    <li><strong>Advertising Partners:</strong> We use Google AdMob to display ads. AdMob may collect and use information for ad personalization.</li>
+                    <li><strong>Legal Requirements:</strong> We may disclose information if required by law or to protect our rights and safety.</li>
+                    <li><strong>Business Transfers:</strong> In the event of a merger, acquisition, or sale of assets, your information may be transferred.</li>
+                </ul>
+                
+                <h3>5. Data Security</h3>
+                <p>We implement appropriate technical and organizational measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction. This includes:</p>
+                <ul>
+                    <li>Encryption of sensitive data using industry-standard algorithms</li>
+                    <li>Secure authentication mechanisms</li>
+                    <li>Regular security audits and updates</li>
+                    <li>Limited access to personal data on a need-to-know basis</li>
+                </ul>
+                <p>However, no method of transmission over the internet or electronic storage is 100% secure, and we cannot guarantee absolute security.</p>
+                
+                <h3>6. Data Retention</h3>
+                <p>We retain your personal information for as long as necessary to provide our services and fulfill the purposes outlined in this Privacy Policy, unless a longer retention period is required by law. Expense data is stored locally on your device and in cloud backups as configured by you.</p>
+                
+                <h3>7. Your Rights and Choices</h3>
+                <p>Depending on your location, you may have the following rights regarding your personal information:</p>
+                <ul>
+                    <li><strong>Access:</strong> Request a copy of the personal information we hold about you.</li>
+                    <li><strong>Correction:</strong> Request correction of inaccurate or incomplete information.</li>
+                    <li><strong>Deletion:</strong> Request deletion of your personal information, subject to legal requirements.</li>
+                    <li><strong>Portability:</strong> Request transfer of your data in a structured format.</li>
+                    <li><strong>Opt-out:</strong> Opt out of personalized advertising or data collection for certain purposes.</li>
+                </ul>
+                <p>To exercise these rights, please contact us using the information provided in the Contact section.</p>
+                
+                <h3>8. Children's Privacy</h3>
+                <p>Our app is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13. If we become aware that we have collected personal information from a child under 13, we will take steps to delete such information promptly.</p>
+                
+                <h3>9. International Data Transfers</h3>
+                <p>Your information may be transferred to and processed in countries other than your own. We ensure that such transfers comply with applicable data protection laws and implement appropriate safeguards.</p>
+                
+                <h3>10. Third-Party Services</h3>
+                <p>Our app integrates with third-party services including:</p>
+                <ul>
+                    <li><strong>Google Sign-In:</strong> For authentication and account management.</li>
+                    <li><strong>Google Drive:</strong> For cloud backup and synchronization.</li>
+                    <li><strong>Google AdMob:</strong> For displaying advertisements.</li>
+                    <li><strong>OneSignal:</strong> For push notifications.</li>
+                </ul>
+                <p>These services have their own privacy policies, which we encourage you to review.</p>
+                
+                <h3>11. Cookies and Tracking Technologies</h3>
+                <p>Our mobile app may use local storage and similar technologies to enhance user experience and app functionality. We do not use cookies in the traditional web sense, but may collect usage data for analytics and improvement purposes.</p>
+                
+                <h3>12. Changes to This Privacy Policy</h3>
+                <p>We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last updated" date. We encourage you to review this Privacy Policy periodically.</p>
+                
+                <h3>13. Contact Us</h3>
+                <p>If you have any questions about this Privacy Policy, please contact us at the information provided in the Contact section below.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="terms">
+        <div class="container">
+            <h2>Terms of Service</h2>
+            <div class="terms-content">
+                <p><strong>Last updated: April 25, 2026</strong></p>
+                
+                <h3>1. Acceptance of Terms</h3>
+                <p>By downloading, installing, or using Smart Expenses Plan ("the App"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, please do not use the App.</p>
+                
+                <h3>2. Description of Service</h3>
+                <p>Smart Expenses Plan is a mobile application that allows users to track, manage, and analyze their personal expenses. The App provides features including expense logging, categorization, reporting, cloud backup, and data export.</p>
+                
+                <h3>3. User Accounts</h3>
+                <p>To use certain features of the App, you may need to create an account or sign in using third-party services like Google. You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account.</p>
+                
+                <h3>4. User Responsibilities</h3>
+                <p>You agree to:</p>
+                <ul>
+                    <li>Use the App only for lawful purposes</li>
+                    <li>Provide accurate and complete information</li>
+                    <li>Not attempt to reverse engineer, modify, or distribute the App</li>
+                    <li>Not use the App to transmit harmful or illegal content</li>
+                    <li>Respect the intellectual property rights of the App and its content</li>
+                </ul>
+                
+                <h3>5. Privacy</h3>
+                <p>Your privacy is important to us. Please review our Privacy Policy, which also governs your use of the App, to understand our practices.</p>
+                
+                <h3>6. Intellectual Property</h3>
+                <p>The App and its original content, features, and functionality are owned by Smart Expenses Plan and are protected by international copyright, trademark, patent, trade secret, and other intellectual property laws.</p>
+                
+                <h3>7. Third-Party Services</h3>
+                <p>The App may integrate with third-party services. Your use of these services is subject to their respective terms and conditions. We are not responsible for the availability or accuracy of third-party services.</p>
+                
+                <h3>8. Disclaimers</h3>
+                <p>The App is provided "as is" without warranties of any kind, either express or implied. We do not warrant that the App will be uninterrupted, error-free, or secure. Use of the App is at your own risk.</p>
+                
+                <h3>9. Limitation of Liability</h3>
+                <p>In no event shall Smart Expenses Plan be liable for any indirect, incidental, special, consequential, or punitive damages arising out of or relating to your use of the App.</p>
+                
+                <h3>10. Indemnification</h3>
+                <p>You agree to indemnify and hold harmless Smart Expenses Plan from any claims, damages, losses, or expenses arising from your use of the App or violation of these Terms.</p>
+                
+                <h3>11. Termination</h3>
+                <p>We may terminate or suspend your account and access to the App at our discretion, without prior notice, for conduct that we believe violates these Terms or is harmful to other users, us, or third parties.</p>
+                
+                <h3>12. Governing Law</h3>
+                <p>These Terms shall be governed by and construed in accordance with the laws of [Your Jurisdiction], without regard to its conflict of law provisions.</p>
+                
+                <h3>13. Changes to Terms</h3>
+                <p>We reserve the right to modify these Terms at any time. We will notify users of changes by updating the "Last updated" date. Continued use of the App after changes constitutes acceptance of the new Terms.</p>
+                
+                <h3>14. Contact Information</h3>
+                <p>If you have any questions about these Terms, please contact us using the information provided in the Contact section.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact">
+        <div class="container">
+            <h2>Contact Us</h2>
+            <p>If you have any questions about our Privacy Policy, Terms of Service, or the Smart Expenses Plan app, please feel free to contact us.</p>
+            <p>Email: <a href="mailto:support@smartexpensesplan.com">support@smartexpensesplan.com</a></p>
+            <p>We aim to respond to all inquiries within 48 hours.</p>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Smart Expenses Plan. All rights reserved.</p>
+            <p>This website is hosted on GitHub Pages for transparency and accessibility.</p>
+        </div>
+    </footer>
+
+    <button class="scroll-to-top" id="scrollToTop">&uarr;</button>
+
+    <script>
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Mobile menu toggle
+        const burger = document.getElementById('burger');
+        const navMenu = document.getElementById('nav-menu');
+        
+        burger.addEventListener('click', () => {
+            navMenu.classList.toggle('show');
+            burger.classList.toggle('toggle');
+        });
+
+        // Scroll to top button
+        const scrollToTopBtn = document.getElementById('scrollToTop');
+        
+        window.addEventListener('scroll', () => {
+            if (window.pageYOffset > 300) {
+                scrollToTopBtn.style.display = 'block';
+            } else {
+                scrollToTopBtn.style.display = 'none';
+            }
+        });
+        
+        scrollToTopBtn.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+
+        // Burger animation
+        const burgerLines = burger.querySelectorAll('div');
+        burger.addEventListener('click', () => {
+            burgerLines.forEach(line => line.classList.toggle('toggle'));
+        });
+
+        // Add toggle class for burger animation
+        const style = document.createElement('style');
+        style.textContent = `
+            .burger .toggle:nth-child(1) { transform: rotate(-45deg) translate(-5px, 6px); }
+            .burger .toggle:nth-child(2) { opacity: 0; }
+            .burger .toggle:nth-child(3) { transform: rotate(45deg) translate(-5px, -6px); }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

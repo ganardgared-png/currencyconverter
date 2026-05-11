@@ -1,0 +1,26 @@
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath("com.android.tools.build:gradle:8.5.1")
+        classpath("com.google.gms:google-services:4.4.0")
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        maven {
+            url = uri("https://repo1.maven.org/maven2/")
+        }
+        maven {
+            url = uri("https://jitpack.io")
+        }
+    }
+}
+
+// If your project needs custom signing configurations for release, do that in android/app/build.gradle.kts
+// Keep the app module Android block in android/app/build.gradle.kts, not here.
