@@ -8,13 +8,19 @@
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
+    
+    <!-- Camera for QR Scan and Receipt Capture -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    
+    <!-- Storage/Gallery Permissions -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <application
         android:label="Smart Expenses Plan"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="ca-app-pub-9549485437440490~7147004684" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

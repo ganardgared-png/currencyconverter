@@ -5,7 +5,9 @@ import 'package:smart_expenses_plan/core/constants/colors.dart';
 import 'package:smart_expenses_plan/data/repositories/payment_repository.dart';
 import 'package:smart_expenses_plan/data/models/payment_plan_model.dart';
 import 'package:intl/intl.dart';
+import 'package:smart_expenses_plan/core/utils/currency_formatter.dart';
 import 'package:smart_expenses_plan/core/utils/date_formatter.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
 class CalendarTab extends StatefulWidget {
   const CalendarTab({super.key});
@@ -14,38 +16,42 @@ class CalendarTab extends StatefulWidget {
   State<CalendarTab> createState() => _CalendarTabState();
 }
 
-class _CalendarTabState extends State<CalendarTab>
-    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+class _CalendarTabState extends State<CalendarTab> with WidgetsBindingObserver {
   late final PaymentRepository _paymentRepository;
-  late TabController _tabController;
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
   Map<DateTime, List<PaymentPlanModel>> _events = {};
   List<PaymentPlanModel> _selectedEvents = [];
   List<PaymentPlanModel> _upcomingPayments = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _paymentRepository = PaymentRepository();
-    _tabController = TabController(length: 2, vsync: this);
     _loadPayments();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _loadPayments(); // Refresh data when app resumes
+      _loadPayments();
     }
   }
 
   Future<void> _loadPayments() async {
     if (!mounted) return;
-    final payments = await _paymentRepository.getAllPayments();
-    _processEvents(payments);
-    _loadUpcomingPayments(payments);
+    setState(() => _isLoading = true);
+    try {
+      final payments = await _paymentRepository.getAllPayments();
+      _processEvents(payments);
+      _loadUpcomingPayments(payments);
+      if (mounted) setState(() => _isLoading = false);
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   void _loadUpcomingPayments(List<PaymentPlanModel> payments) {
@@ -54,429 +60,205 @@ class _CalendarTabState extends State<CalendarTab>
         .where((p) => p.paymentDate.isAfter(now) && p.status != 'paid')
         .toList();
     upcoming.sort((a, b) => a.paymentDate.compareTo(b.paymentDate));
-    
-    setState(() {
-      _upcomingPayments = upcoming;
-    });
+    setState(() => _upcomingPayments = upcoming);
   }
 
   void _processEvents(List<PaymentPlanModel> payments) {
     final events = <DateTime, List<PaymentPlanModel>>{};
-    
     for (var payment in payments) {
-      final date = DateTime(
-        payment.paymentDate.year,
-        payment.paymentDate.month,
-        payment.paymentDate.day,
-      );
-      
-      if (events[date] == null) {
-        events[date] = [];
-      }
+      final date = DateTime(payment.paymentDate.year, payment.paymentDate.month, payment.paymentDate.day);
+      if (events[date] == null) events[date] = [];
       events[date]!.add(payment);
     }
-    
     setState(() {
       _events = events;
-      // Set default to show upcoming reminders if no specific day is selected
-      if (_selectedDay == null) {
-        _selectedDay = DateTime.now();
+      if (_selectedDay != null) {
+        _selectedEvents = events[DateTime(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day)] ?? [];
       }
-      _selectedEvents = events[_selectedDay ?? _focusedDay] ?? [];
     });
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _tabController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) return const Center(child: CircularProgressIndicator());
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Calendar & Reminders'),
+        title: const Text('Calendar'),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: AppColors.primary,
-          indicatorWeight: 3,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: isDark ? AppColors.darkSubtext : Colors.grey,
-          tabs: const [
-            Tab(icon: Icon(Icons.calendar_today), text: 'Calendar'),
-            Tab(icon: Icon(Icons.alarm), text: 'Upcoming'),
-          ],
-        ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildCalendarTab(isDark),
-          _buildUpcomingTab(isDark),
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: _buildCalendar(isDark),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _selectedDay != null ? 'Daily Reminders' : 'Upcoming Payments',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  if (_selectedDay != null)
+                    TextButton(
+                      onPressed: () => setState(() => _selectedDay = null),
+                      child: const Text('Show All Upcoming'),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final items = _selectedDay != null ? _selectedEvents : _upcomingPayments;
+                  if (items.isEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 40),
+                      child: _buildEmptyState(isDark),
+                    );
+                  }
+                  return AnimationConfiguration.staggeredList(
+                    position: index,
+                    duration: const Duration(milliseconds: 375),
+                    child: SlideAnimation(
+                      verticalOffset: 20.0,
+                      child: FadeInAnimation(
+                        child: _buildReminderCard(items[index], isDark),
+                      ),
+                    ),
+                  );
+                },
+                childCount: (_selectedDay != null ? _selectedEvents : _upcomingPayments).length.clamp(1, 999),
+              ),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
     );
   }
 
-  Widget _buildCalendarTab(bool isDark) {
-    return Column(
-      children: [
-        // Calendar
-        Container(
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.darkSurface : Colors.white,
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(20),
-              bottomRight: Radius.circular(20),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 5),
-              ),
-            ],
+  Widget _buildCalendar(bool isDark) {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurface : Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
-          child: TableCalendar(
-            firstDay: DateTime.utc(2020, 1, 1),
-            lastDay: DateTime.utc(2030, 12, 31),
-            focusedDay: _focusedDay,
-            calendarFormat: _calendarFormat,
-            selectedDayPredicate: (day) {
-              return isSameDay(_selectedDay, day);
-            },
-            eventLoader: (day) {
-              return _events[day] ?? [];
-            },
-            onFormatChanged: (format) {
-              setState(() {
-                _calendarFormat = format;
-              });
-            },
-            onPageChanged: (focusedDay) {
-              setState(() {
-                _focusedDay = focusedDay;
-              });
-            },
-            onDaySelected: (selectedDay, focusedDay) {
-              setState(() {
-                _selectedDay = selectedDay;
-                _focusedDay = focusedDay;
-                _selectedEvents = _events[selectedDay] ?? [];
-              });
-            },
-            calendarStyle: CalendarStyle(
-              todayDecoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.2),
-                shape: BoxShape.circle,
-              ),
-              selectedDecoration: const BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
-              ),
-              markerDecoration: const BoxDecoration(
-                color: AppColors.accent,
-                shape: BoxShape.circle,
-              ),
-              markerSize: 8,
-              markersMaxCount: 3,
-              weekendTextStyle: TextStyle(
-                color: isDark ? Colors.grey : Colors.black,
-              ),
-              holidayTextStyle: TextStyle(
-                color: isDark ? Colors.grey : Colors.black,
-              ),
-            ),
-            headerStyle: HeaderStyle(
-              formatButtonVisible: true,
-              titleCentered: true,
-              formatButtonDecoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              formatButtonTextStyle: const TextStyle(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w600,
-              ),
-              leftChevronIcon: Icon(
-                Icons.chevron_left,
-                color: isDark ? Colors.white : Colors.black,
-              ),
-              rightChevronIcon: Icon(
-                Icons.chevron_right,
-                color: isDark ? Colors.white : Colors.black,
-              ),
-            ),
-            daysOfWeekStyle: DaysOfWeekStyle(
-              weekdayStyle: TextStyle(
-                color: isDark ? Colors.grey[300] : Colors.grey[700],
-                fontWeight: FontWeight.w600,
-              ),
-              weekendStyle: TextStyle(
-                color: isDark ? Colors.grey[300] : Colors.grey[700],
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+        ],
+      ),
+      child: TableCalendar(
+        firstDay: DateTime.utc(2020, 1, 1),
+        lastDay: DateTime.utc(2030, 12, 31),
+        focusedDay: _focusedDay,
+        calendarFormat: _calendarFormat,
+        selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+        eventLoader: (day) => _events[DateTime(day.year, day.month, day.day)] ?? [],
+        onFormatChanged: (format) => setState(() => _calendarFormat = format),
+        onPageChanged: (focusedDay) => setState(() => _focusedDay = focusedDay),
+        onDaySelected: (selectedDay, focusedDay) {
+          setState(() {
+            _selectedDay = selectedDay;
+            _focusedDay = focusedDay;
+            _selectedEvents = _events[DateTime(selectedDay.year, selectedDay.month, selectedDay.day)] ?? [];
+          });
+        },
+        calendarStyle: CalendarStyle(
+          todayDecoration: BoxDecoration(color: AppColors.primary.withOpacity(0.15), shape: BoxShape.circle),
+          todayTextStyle: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+          selectedDecoration: const BoxDecoration(gradient: AppColors.primaryGradient, shape: BoxShape.circle),
+          markerDecoration: const BoxDecoration(color: AppColors.accent, shape: BoxShape.circle),
+          markerSize: 6,
+          outsideDaysVisible: false,
+        ),
+        headerStyle: HeaderStyle(
+          formatButtonVisible: true,
+          titleCentered: true,
+          formatButtonDecoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
           ),
+          formatButtonTextStyle: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
         ),
-
-        const SizedBox(height: 16),
-
-        // Events List Header
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                _selectedDay == null
-                    ? 'Today\'s Reminders'
-                    : 'Reminders for ${DateFormat('dd MMM yyyy').format(_selectedDay!)}',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              if (_selectedEvents.isNotEmpty)
-                Text(
-                  '${_selectedEvents.length} items',
-                  style: TextStyle(
-                    color: isDark ? AppColors.darkSubtext : Colors.grey[600],
-                    fontSize: 12,
-                  ),
-                ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 8),
-
-        // Events List
-        Expanded(
-          child: _selectedEvents.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.event_busy,
-                        size: 60,
-                        color: isDark ? AppColors.darkSubtext : Colors.grey[400],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No reminders for this day',
-                        style: TextStyle(
-                          color: isDark ? AppColors.darkSubtext : Colors.grey[600],
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _selectedEvents.length,
-                  itemBuilder: (context, index) {
-                    final payment = _selectedEvents[index];
-                    return _buildReminderItem(payment);
-                  },
-                ),
-        ),
-      ],
+      ),
     );
   }
 
-  Widget _buildUpcomingTab(bool isDark) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              const Icon(Icons.notifications_active),
-              const SizedBox(width: 8),
-              Text(
-                'Upcoming Payments',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const Spacer(),
-              if (_upcomingPayments.isNotEmpty)
-                Text(
-                  '${_upcomingPayments.length} reminders',
-                  style: TextStyle(
-                    color: isDark ? AppColors.darkSubtext : Colors.grey[600],
-                    fontSize: 12,
-                  ),
-                ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: _upcomingPayments.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.check_circle_outline,
-                        size: 60,
-                        color: AppColors.success.withOpacity(0.5),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No upcoming payments',
-                        style: TextStyle(
-                          color: isDark ? AppColors.darkSubtext : Colors.grey[600],
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: _upcomingPayments.length,
-                  itemBuilder: (context, index) {
-                    final payment = _upcomingPayments[index];
-                    return _buildReminderItem(payment);
-                  },
-                ),
-        ),
-      ],
-    );
-  }
-
-  @override
-
-  Widget _buildReminderItem(PaymentPlanModel payment) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isToday = DateFormatter.isToday(payment.paymentDate);
-    final isTomorrow = DateFormatter.isTomorrow(payment.paymentDate);
-
-    String statusText;
-    Color statusColor;
+  Widget _buildReminderCard(PaymentPlanModel payment, bool isDark) {
+    final statusColor = payment.status == 'paid' ? AppColors.success : (payment.paymentDate.isBefore(DateTime.now()) ? AppColors.error : AppColors.warning);
     
-    if (payment.status == 'paid') {
-      statusText = 'Paid';
-      statusColor = AppColors.success;
-    } else if (payment.paymentDate.isBefore(DateTime.now())) {
-      statusText = 'Overdue';
-      statusColor = AppColors.error;
-    } else {
-      statusText = 'Upcoming';
-      statusColor = AppColors.warning;
-    }
-
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkSurface : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isToday ? AppColors.primary.withOpacity(0.3) : Colors.transparent,
-          width: 2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: isDark ? Colors.white10 : Colors.black.withOpacity(0.04)),
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.all(12),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: Container(
           width: 50,
           height: 50,
-          decoration: BoxDecoration(
-            color: statusColor.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            _getPaymentIcon(payment.billType),
-            color: statusColor,
-            size: 24,
-          ),
+          decoration: BoxDecoration(color: statusColor.withOpacity(0.1), shape: BoxShape.circle),
+          child: Icon(_getPaymentIcon(payment.billType), color: statusColor),
         ),
-        title: Text(
-          payment.payName,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text(
-              '${payment.currency == 'TZS' ? 'TZS' : '\$'} ${NumberFormat('#,###').format(payment.amount)}',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              isToday
-                  ? 'Today'
-                  : isTomorrow
-                      ? 'Tomorrow'
-                      : DateFormat('dd MMM yyyy').format(payment.paymentDate),
-              style: TextStyle(
-                fontSize: 12,
-                color: isToday ? AppColors.primary : Colors.grey,
-              ),
-            ),
-          ],
+        title: Text(payment.payName, style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text(
+          '${CurrencyFormatter.format(payment.amount).split('.')[0]} • ${DateFormat('dd MMM').format(payment.paymentDate)}',
+          style: TextStyle(fontSize: 12, color: isDark ? AppColors.darkSubtext : Colors.grey[600]),
         ),
         trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: statusColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
           child: Text(
-            statusText,
-            style: TextStyle(
-              color: statusColor,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
+            payment.status.toUpperCase(),
+            style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold),
           ),
         ),
-        onTap: () {
-          Navigator.pushNamed(
-            context,
-            '/payment-detail',
-            arguments: payment.id,
-          );
-        },
+        onTap: () => Navigator.pushNamed(context, '/payment-detail', arguments: payment.id),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(bool isDark) {
+    return Center(
+      child: Column(
+        children: [
+          Icon(Icons.event_available_rounded, size: 64, color: isDark ? Colors.white10 : Colors.grey[200]),
+          const SizedBox(height: 16),
+          Text('No payments found', style: TextStyle(color: isDark ? AppColors.darkSubtext : Colors.grey)),
+        ],
       ),
     );
   }
 
   IconData _getPaymentIcon(String billType) {
     switch (billType.toLowerCase()) {
-      case 'electricity':
-        return Icons.bolt;
-      case 'water':
-        return Icons.water_drop;
-      case 'internet':
-        return Icons.wifi;
-      case 'rent':
-        return Icons.home;
-      case 'loan':
-        return Icons.attach_money;
-      default:
-        return Icons.payment;
+      case 'electricity': return Icons.bolt;
+      case 'water': return Icons.water_drop;
+      case 'internet': return Icons.wifi;
+      case 'rent': return Icons.home;
+      case 'loan': return Icons.account_balance;
+      default: return Icons.payment;
     }
   }
-}
+}

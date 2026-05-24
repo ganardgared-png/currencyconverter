@@ -35,90 +35,83 @@ class QuickActions extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildActionButton(
-                  context,
-                  'Payments',
-                  Icons.payment,
-                  AppColors.primary,
-                  () {
-                    Navigator.push(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final crossAxisCount = constraints.maxWidth > 500 ? 4 : 2;
+              final width = (constraints.maxWidth - ((crossAxisCount - 1) * 12)) / crossAxisCount;
+              
+              return Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  SizedBox(
+                    width: width,
+                    child: _buildActionButton(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => const PaymentListScreen(),
+                      'Payments',
+                      Icons.payment,
+                      AppColors.primary,
+                      () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const PaymentListScreen()),
                       ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildActionButton(
-                  context,
-                  'Expenses',
-                  Icons.receipt,
-                  AppColors.warning,
-                  () {
-                    Navigator.push(
+                    ),
+                  ),
+                  SizedBox(
+                    width: width,
+                    child: _buildActionButton(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => const ExpenseListScreen(),
+                      'Expenses',
+                      Icons.receipt,
+                      AppColors.warning,
+                      () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ExpenseListScreen()),
                       ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildActionButton(
-                  context,
-                  'Export PDF',
-                  Icons.picture_as_pdf,
-                  Colors.red,
-                  () async {
-                    try {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Exporting to PDF...')),
-                      );
-                      final exportService = ExportService();
-                      final filePath = await exportService.exportToPDF();
-                      await exportService.shareFile(filePath);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('PDF exported successfully')),
-                      );
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Failed to export PDF: $e')),
-                      );
-                    }
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildActionButton(
-                  context,
-                  'Settings',
-                  Icons.settings,
-                  AppColors.info,
-                  () {
-                    Navigator.push(
+                    ),
+                  ),
+                  SizedBox(
+                    width: width,
+                    child: _buildActionButton(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => const SettingsScreen(),
+                      'Export PDF',
+                      Icons.picture_as_pdf,
+                      Colors.red,
+                      () async {
+                        try {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Exporting to PDF...')),
+                          );
+                          final exportService = ExportService();
+                          final filePath = await exportService.exportToPDF();
+                          await exportService.shareFile(filePath);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('PDF exported successfully')),
+                          );
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Failed to export PDF: $e')),
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: width,
+                    child: _buildActionButton(
+                      context,
+                      'Settings',
+                      Icons.settings,
+                      AppColors.info,
+                      () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SettingsScreen()),
                       ),
-                    );
-                  },
-                ),
-              ),
-            ],
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),

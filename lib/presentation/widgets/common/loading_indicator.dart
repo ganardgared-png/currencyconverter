@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:smart_expenses_plan/core/constants/colors.dart';
+import 'package:shimmer/shimmer.dart';
 
 class LoadingIndicator extends StatelessWidget {
   final String? message;

@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:smart_expenses_plan/core/utils/currency_formatter.dart';
 import 'package:smart_expenses_plan/bloc/expense/expense_bloc.dart';
 import 'package:smart_expenses_plan/bloc/home/home_bloc.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
 class ExpenseListScreen extends StatefulWidget {
   const ExpenseListScreen({super.key});
@@ -180,13 +181,24 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                 
                 // Expenses List
                 Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: filteredExpenses.length,
-                    itemBuilder: (context, index) {
-                      final expense = filteredExpenses[index];
-                      return _buildExpenseCard(expense);
-                    },
+                  child: AnimationLimiter(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: filteredExpenses.length,
+                      itemBuilder: (context, index) {
+                        final expense = filteredExpenses[index];
+                        return AnimationConfiguration.staggeredList(
+                          position: index,
+                          duration: const Duration(milliseconds: 375),
+                          child: SlideAnimation(
+                            verticalOffset: 50.0,
+                            child: FadeInAnimation(
+                              child: _buildExpenseCard(expense),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
               ],

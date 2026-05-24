@@ -8,6 +8,7 @@ import 'package:smart_expenses_plan/data/repositories/auth_repository.dart';
 import 'package:smart_expenses_plan/data/repositories/income_repository.dart';
 import 'package:smart_expenses_plan/data/models/payment_plan_model.dart';
 import 'package:smart_expenses_plan/data/models/expense_model.dart';
+import 'package:smart_expenses_plan/data/repositories/budget_repository.dart';
 
 part 'home_event.dart';
 part 'home_state.dart';
@@ -17,16 +18,19 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   final ExpenseRepository _expenseRepository;
   final AuthRepository _authRepository;
   final IncomeRepository _incomeRepository;
+  final BudgetRepository _budgetRepository;
   
   HomeBloc({
     required PaymentRepository paymentRepository,
     required ExpenseRepository expenseRepository,
     required AuthRepository authRepository,
     required IncomeRepository incomeRepository,
+    required BudgetRepository budgetRepository,
   })  : _paymentRepository = paymentRepository,
         _expenseRepository = expenseRepository,
         _authRepository = authRepository,
         _incomeRepository = incomeRepository,
+        _budgetRepository = budgetRepository,
         super(HomeInitial()) {
     on<LoadHomeData>(_onLoadHomeData);
     on<UpdateIncome>(_onUpdateIncome);
@@ -60,9 +64,16 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       final paidPayments = await _paymentRepository.getPaidPayments();
       final missedPayments = await _paymentRepository.getMissedPayments();
       
+      // Get budget metrics
+      final budgetCount = await _budgetRepository.getBudgetCount();
+      final confirmedBudgetExpenses = await _budgetRepository.getTotalConfirmedPaidAmount();
+      
       // Get totals
       final totalPaidThisMonth = await _paymentRepository.getTotalPaidThisMonth();
       final totalExpensesThisMonth = await _expenseRepository.getTotalExpensesThisMonth();
+      
+      // Effective income = total income - confirmed budget paid expenses
+      final effectiveIncome = totalIncome - confirmedBudgetExpenses;
       
       // Get categories
       final paymentCategories = await _paymentRepository.getPaymentsByCategory();
@@ -76,7 +87,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       final recentExpenses = allExpenses.take(5).toList();
       
       emit(HomeLoaded(
-        income: totalIncome,
+        income: effectiveIncome,
         incomeType: 'total', // Or whatever makes sense
         upcomingCount: upcomingPayments.length,
         upcomingTotal: upcomingPayments.fold(0.0, (sum, p) => sum + p.totalAmount),
@@ -84,6 +95,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         paidTotal: paidPayments.fold(0.0, (sum, p) => sum + p.totalAmount),
         missedCount: missedPayments.length,
         missedTotal: missedPayments.fold(0.0, (sum, p) => sum + p.totalAmount),
+        budgetCount: budgetCount,
         totalPaidThisMonth: totalPaidThisMonth,
         totalExpensesThisMonth: totalExpensesThisMonth,
         paymentCategories: paymentCategories,

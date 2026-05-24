@@ -8,7 +8,7 @@ import 'package:smart_expenses_plan/data/repositories/expense_repository.dart';
 import 'package:smart_expenses_plan/data/models/user_model.dart';
 import 'package:smart_expenses_plan/core/utils/currency_formatter.dart';
 import 'package:intl/intl.dart';
-import 'package:smart_expenses_plan/core/utils/export_helper.dart';
+import 'package:smart_expenses_plan/services/export_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:smart_expenses_plan/presentation/screens/backup/backup_setup_screen.dart';
 import 'package:smart_expenses_plan/presentation/screens/backup/restore_screen.dart';
@@ -20,6 +20,7 @@ import 'package:smart_expenses_plan/presentation/screens/settings/terms_screen.d
 import 'package:smart_expenses_plan/data/providers/database_provider.dart';
 import 'package:smart_expenses_plan/services/google_auth_service.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
 class ProfileTab extends StatefulWidget {
   const ProfileTab({super.key});
@@ -33,6 +34,7 @@ class _ProfileTabState extends State<ProfileTab> {
   late IncomeRepository _incomeRepository;
   late PaymentRepository _paymentRepository;
   late ExpenseRepository _expenseRepository;
+  final ExportService _exportService = ExportService();
   UserModel? _user;
   bool _isLoading = true;
   Map<String, dynamic> _stats = {};
@@ -300,270 +302,281 @@ class _ProfileTabState extends State<ProfileTab> {
                   // Stats Cards
                   SliverPadding(
                     padding: const EdgeInsets.all(16),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        // Balance Card
-                        Card(
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(20),
-                            child: Column(
-                              children: [
-                                const Text(
-                                  'Current Balance',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                    sliver: AnimationLimiter(
+                      child: SliverList(
+                        delegate: SliverChildListDelegate(
+                          AnimationConfiguration.toStaggeredList(
+                            duration: const Duration(milliseconds: 375),
+                            childAnimationBuilder: (widget) => SlideAnimation(
+                              verticalOffset: 50.0,
+                              child: FadeInAnimation(child: widget),
+                            ),
+                            children: [
+                              // Balance Card
+                              Card(
+                                elevation: 2,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  CurrencyFormatter.format(_getStatDouble('balance')),
-                                  style: TextStyle(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.bold,
-                                    color: _stats['balance'] >= 0
-                                        ? AppColors.success
-                                        : AppColors.error,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        
-                        const SizedBox(height: 16),
-                        
-                        // Financial Summary
-                        Card(
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Financial Summary',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                _buildSummaryRow(
-                                  'Total Income',
-                                  CurrencyFormatter.format(_getStatDouble('totalIncome')),
-                                  AppColors.success,
-                                ),
-                                const Divider(),
-                                _buildSummaryRow(
-                                  'Total Expenses',
-                                  CurrencyFormatter.format(_getStatDouble('totalExpenseAmount')),
-                                  AppColors.warning,
-                                ),
-                                const Divider(),
-                                _buildSummaryRow(
-                                  'Paid This Month',
-                                  CurrencyFormatter.format(_getStatInt('paidCount') * 100000.0), // Example
-                                  AppColors.info,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        
-                        
-                        // Security
-                        _buildSettingsSection(
-                          'Security',
-                          [
-                            if (_biometricAvailable)
-                              _buildSwitchTile(
-                                'Biometric Login',
-                                'Use fingerprint/face to login',
-                                Icons.fingerprint,
-                                _useBiometrics,
-                                _toggleBiometrics,
-                              ),
-                            _buildListTile(
-                              'Setup Password',
-                              'Update your password',
-                              Icons.lock,
-                              _changePassword,
-                            ),
-                            _buildListTile(
-                              'Setup PIN',
-                              'Create a PIN for quick access',
-                              Icons.pin,
-                              _setupPin,
-                            ),
-                          ],
-                        ),
-                        
-                        const SizedBox(height: 16),
-                        
-                        // Notification Settings
-                        _buildSettingsSection(
-                          'Notifications',
-                          [
-                            _buildListTile(
-                              'Notification Settings',
-                              'Manage reminders and alerts',
-                              Icons.notifications,
-                              () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => NotificationSettings(),
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                        
-                        const SizedBox(height: 16),
-                        
-                        // Settings Sections
-                        _buildSettingsSection(
-                          'Appearance',
-                          [
-                            _buildSwitchTile(
-                              'Dark Mode',
-                              'Toggle dark/light theme',
-                              Icons.dark_mode,
-                              Provider.of<ThemeService>(context).isDarkMode,
-                              (value) {
-                                Provider.of<ThemeService>(context, listen: false).toggleTheme();
-                              },
-                            ),
-                          ],
-                        ),
-                        
-                        const SizedBox(height: 16),
-                        
-                        // Backup & Restore
-                        _buildSettingsSection(
-                          'Backup & Restore',
-                          [
-                            _buildListTile(
-                              'Backup Settings',
-                              'Configure cloud backup',
-                              Icons.cloud_upload,
-                              () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const BackupSetupScreen(),
-                                  ),
-                                );
-                              },
-                            ),
-                            _buildListTile(
-                              'Restore Data',
-                              'Restore from backup',
-                              Icons.cloud_download,
-                              () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const RestoreScreen(),
-                                  ),
-                                );
-                              },
-                            ),
-                            _buildListTile(
-                              'Export Data',
-                              'Export to PDF/Excel/CSV',
-                              Icons.download,
-                              _showExportOptions,
-                            ),
-                          ],
-                        ),
-                        
-                        const SizedBox(height: 16),
-                        
-                        // Data Management
-                        _buildSettingsSection(
-                          'Data Management',
-                          [
-                            _buildListTile(
-                              'Clear All Data',
-                              'Delete all app data',
-                              Icons.delete_forever,
-                              _clearAllData,
-                              color: AppColors.error,
-                            ),
-                          ],
-                        ),
-                        
-                        const SizedBox(height: 16),
-                        
-                        // About Section
-                        Card(
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'About',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                _buildInfoRow('Version', '1.0.0'),
-                                _buildInfoRow('Developer', 'Faustine'),
-                                _buildInfoRow('Manager', 'Goodluck'),
-                                const SizedBox(height: 8),
-                                const Divider(),
-                                const SizedBox(height: 8),
-                                ListTile(
-                                  leading: const Icon(Icons.description, color: AppColors.primary),
-                                  title: const Text('Terms of Service'),
-                                  subtitle: const Text('Read our terms'),
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => TermsScreen(),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: Column(
+                                    children: [
+                                      const Text(
+                                        'Current Balance',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                       ),
-                                    );
-                                  },
-                                ),
-                                ListTile(
-                                  leading: const Icon(Icons.feedback, color: AppColors.primary),
-                                  title: const Text('Send Feedback'),
-                                  subtitle: const Text('smartsexpensesganard@gmail.com'),
-                                  onTap: _sendFeedback,
-                                ),
-                                ListTile(
-                                  leading: const Icon(Icons.logout, color: AppColors.error),
-                                  title: const Text(
-                                    'Logout',
-                                    style: TextStyle(color: AppColors.error),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        CurrencyFormatter.format(_getStatDouble('balance')),
+                                        style: TextStyle(
+                                          fontSize: 32,
+                                          fontWeight: FontWeight.bold,
+                                          color: _stats['balance'] >= 0
+                                              ? AppColors.success
+                                              : AppColors.error,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  onTap: _showLogoutDialog,
                                 ),
-                              ],
-                            ),
+                              ),
+                              
+                              const SizedBox(height: 16),
+                              
+                              // Financial Summary
+                              Card(
+                                elevation: 2,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Financial Summary',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      _buildSummaryRow(
+                                        'Total Income',
+                                        CurrencyFormatter.format(_getStatDouble('totalIncome')),
+                                        AppColors.success,
+                                      ),
+                                      const Divider(),
+                                      _buildSummaryRow(
+                                        'Total Expenses',
+                                        CurrencyFormatter.format(_getStatDouble('totalExpenseAmount')),
+                                        AppColors.warning,
+                                      ),
+                                      const Divider(),
+                                      _buildSummaryRow(
+                                        'Paid This Month',
+                                        CurrencyFormatter.format(_getStatInt('paidCount') * 100000.0), // Example
+                                        AppColors.info,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              
+                              
+                              // Security
+                              _buildSettingsSection(
+                                'Security',
+                                [
+                                  if (_biometricAvailable)
+                                    _buildSwitchTile(
+                                      'Biometric Login',
+                                      'Use fingerprint/face to login',
+                                      Icons.fingerprint,
+                                      _useBiometrics,
+                                      _toggleBiometrics,
+                                    ),
+                                  _buildListTile(
+                                    'Setup Password',
+                                    'Update your password',
+                                    Icons.lock,
+                                    _changePassword,
+                                  ),
+                                  _buildListTile(
+                                    'Setup PIN',
+                                    'Create a PIN for quick access',
+                                    Icons.pin,
+                                    _setupPin,
+                                  ),
+                                ],
+                              ),
+                              
+                              const SizedBox(height: 16),
+                              
+                              // Notification Settings
+                              _buildSettingsSection(
+                                'Notifications',
+                                [
+                                  _buildListTile(
+                                    'Notification Settings',
+                                    'Manage reminders and alerts',
+                                    Icons.notifications,
+                                    () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => NotificationSettings(),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                              
+                              const SizedBox(height: 16),
+                              
+                              // Settings Sections
+                              _buildSettingsSection(
+                                'Appearance',
+                                [
+                                  _buildSwitchTile(
+                                    'Dark Mode',
+                                    'Toggle dark/light theme',
+                                    Icons.dark_mode,
+                                    Provider.of<ThemeService>(context).isDarkMode,
+                                    (value) {
+                                      Provider.of<ThemeService>(context, listen: false).toggleTheme();
+                                    },
+                                  ),
+                                ],
+                              ),
+                              
+                              const SizedBox(height: 16),
+                              
+                              // Backup & Restore
+                              _buildSettingsSection(
+                                'Backup & Restore',
+                                [
+                                  _buildListTile(
+                                    'Backup Settings',
+                                    'Configure cloud backup',
+                                    Icons.cloud_upload,
+                                    () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => const BackupSetupScreen(),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  _buildListTile(
+                                    'Restore Data',
+                                    'Restore from backup',
+                                    Icons.cloud_download,
+                                    () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => const RestoreScreen(),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  _buildListTile(
+                                    'Export Data',
+                                    'Export to PDF/Excel/CSV',
+                                    Icons.download,
+                                    _showExportOptions,
+                                  ),
+                                ],
+                              ),
+                              
+                              const SizedBox(height: 16),
+                              
+                              // Data Management
+                              _buildSettingsSection(
+                                'Data Management',
+                                [
+                                  _buildListTile(
+                                    'Clear All Data',
+                                    'Delete all app data',
+                                    Icons.delete_forever,
+                                    _clearAllData,
+                                    color: AppColors.error,
+                                  ),
+                                ],
+                              ),
+                              
+                              const SizedBox(height: 16),
+                              
+                              // About Section
+                              Card(
+                                elevation: 2,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'About',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      _buildInfoRow('Version', '1.0.2'),
+                                      _buildInfoRow('Developer', 'Faustine'),
+                                      _buildInfoRow('Manager', 'Goodluck'),
+                                      const SizedBox(height: 8),
+                                      const Divider(),
+                                      const SizedBox(height: 8),
+                                      ListTile(
+                                        leading: const Icon(Icons.description, color: AppColors.primary),
+                                        title: const Text('Terms of Service'),
+                                        subtitle: const Text('Read our terms'),
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => TermsScreen(),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                      ListTile(
+                                        leading: const Icon(Icons.feedback, color: AppColors.primary),
+                                        title: const Text('Send Feedback'),
+                                        subtitle: const Text('smartsexpensesganard@gmail.com'),
+                                        onTap: _sendFeedback,
+                                      ),
+                                      ListTile(
+                                        leading: const Icon(Icons.logout, color: AppColors.error),
+                                        title: const Text(
+                                          'Logout',
+                                          style: TextStyle(color: AppColors.error),
+                                        ),
+                                        onTap: _showLogoutDialog,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              
+                              const SizedBox(height: 20),
+                            ],
                           ),
                         ),
-                        
-                        const SizedBox(height: 20),
-                      ]),
+                      ),
                     ),
                   ),
                 ],
@@ -1098,40 +1111,17 @@ class _ProfileTabState extends State<ProfileTab> {
         ),
       );
 
-      // Get all payments, expenses, and incomes
-      final payments = await _paymentRepository.getAllPayments();
-      final expenses = await _expenseRepository.getAllExpenses();
-      final incomes = await _incomeRepository.getAllIncomes();
-      
-      final timestamp = DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now());
-      final fileName = 'SmartExpenses_$timestamp';
-      
       String exportPath;
       
       switch (format) {
         case 'PDF':
-          exportPath = await ExportHelper.exportToPDF(
-            payments: payments,
-            expenses: expenses,
-            incomes: incomes,
-            fileName: fileName,
-          );
+          exportPath = await _exportService.exportToPDF();
           break;
         case 'Excel':
-          exportPath = await ExportHelper.exportToExcel(
-            payments: payments,
-            expenses: expenses,
-            incomes: incomes,
-            fileName: fileName,
-          );
+          exportPath = await _exportService.exportToExcel();
           break;
         case 'CSV':
-          exportPath = await ExportHelper.exportToCSV(
-            payments: payments,
-            expenses: expenses,
-            incomes: incomes,
-            fileName: fileName,
-          );
+          exportPath = await _exportService.exportToCSV();
           break;
         default:
           exportPath = '';
@@ -1173,7 +1163,7 @@ class _ProfileTabState extends State<ProfileTab> {
   Future<void> _sendFeedback() async {
     final emailUri = Uri(
       scheme: 'mailto',
-      path: 'smartsexpensesganard@gmail.com',
+      path: 'ganardgared@gmail.com',
       query: encodeQueryParameters(<String, String>{
         'subject': 'Smart Expenses Plan Feedback',
       }),

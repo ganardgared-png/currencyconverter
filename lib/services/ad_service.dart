@@ -12,39 +12,35 @@ class AdService {
 
   InterstitialAd? _interstitialAd;
   AppOpenAd? _appOpenAd;
+  DateTime? _appOpenLoadTime;
+  
   bool _isInterstitialLoading = false;
   bool _isAppOpenLoading = false;
   bool _isAppOpenShowing = false;
   Timer? _adTimer;
+  
+  // Public getters for status tracking
+  bool get isInterstitialLoaded => _interstitialAd != null;
+  bool get isAppOpenLoaded => _appOpenAd != null;
+  bool get isInterstitialLoading => _isInterstitialLoading;
+  bool get isAppOpenLoading => _isAppOpenLoading;
+  bool get adsEnabled => _adsEnabled;
+
+  // Ad expiration duration (4 hours)
+  static const Duration _adExpirationDuration = Duration(hours: 4);
+
+  static const bool _adsEnabled = true; // Ads enabled for production
 
   bool get _isSupportedPlatform {
-    return !kIsWeb &&
-        (defaultTargetPlatform == TargetPlatform.android ||
-            defaultTargetPlatform == TargetPlatform.iOS);
+    return _adsEnabled && !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
   }
 
   String get _appOpenAdUnitId {
-    if (AdConstants.useTestAds) {
-      return defaultTargetPlatform == TargetPlatform.android
-          ? AdConstants.appOpenAdUnitIdAndroidTest
-          : AdConstants.appOpenAdUnitIdIOSTest;
-    } else {
-      return defaultTargetPlatform == TargetPlatform.android
-          ? AdConstants.appOpenAdUnitIdAndroid
-          : AdConstants.appOpenAdUnitIdIOS;
-    }
+    return AdConstants.appOpenAdUnitIdAndroid;
   }
 
   String get _interstitialAdUnitId {
-    if (AdConstants.useTestAds) {
-      return defaultTargetPlatform == TargetPlatform.android
-          ? AdConstants.interstitialAdUnitIdAndroidTest
-          : AdConstants.interstitialAdUnitIdIOSTest;
-    } else {
-      return defaultTargetPlatform == TargetPlatform.android
-          ? AdConstants.interstitialAdUnitIdAndroid
-          : AdConstants.interstitialAdUnitIdIOS;
-    }
+    return AdConstants.interstitialAdUnitIdAndroid;
   }
 
   Future<void> initialize() async {
@@ -53,6 +49,7 @@ class AdService {
     }
 
     try {
+      print('AdService: Initializing Mobile Ads SDK...');
       await MobileAds.instance.initialize();
       await MobileAds.instance.updateRequestConfiguration(
         RequestConfiguration(testDeviceIds: <String>['EMULATOR']),
@@ -62,28 +59,42 @@ class AdService {
       _startAdTimer();
     } catch (e) {
       print('AdService: Failed to initialize ads: $e');
-      // Continue without ads if initialization fails
     }
   }
 
+  bool _isAdAvailable() {
+    return _appOpenAd != null && 
+           _appOpenLoadTime != null && 
+           DateTime.now().difference(_appOpenLoadTime!) < _adExpirationDuration;
+  }
+
   void _loadAppOpenAd() {
-    if (!_isSupportedPlatform || _isAppOpenLoading) {
+    if (!_isSupportedPlatform || _isAppOpenLoading || _isAppOpenShowing) {
       return;
     }
 
+    // If an ad is already available and not expired, don't load a new one
+    if (_isAdAvailable()) {
+      return;
+    }
+
+    print('AdService: Loading App Open ad...');
     _isAppOpenLoading = true;
     AppOpenAd.load(
       adUnitId: _appOpenAdUnitId,
       request: const AdRequest(),
       adLoadCallback: AppOpenAdLoadCallback(
         onAdLoaded: (ad) {
+          print('AdService: App Open ad loaded successfully');
           _appOpenAd = ad;
+          _appOpenLoadTime = DateTime.now();
           _isAppOpenLoading = false;
           _setupAppOpenCallbacks();
         },
         onAdFailedToLoad: (error) {
           print('AdService: App Open ad failed to load: $error');
           _appOpenAd = null;
+          _appOpenLoadTime = null;
           _isAppOpenLoading = false;
         },
       ),
@@ -92,15 +103,23 @@ class AdService {
 
   void _setupAppOpenCallbacks() {
     _appOpenAd?.fullScreenContentCallback = FullScreenContentCallback(
+      onAdShowedFullScreenContent: (ad) {
+        print('AdService: App Open ad showed full screen content');
+        _isAppOpenShowing = true;
+      },
       onAdDismissedFullScreenContent: (ad) {
+        print('AdService: App Open ad dismissed');
         ad.dispose();
         _appOpenAd = null;
+        _appOpenLoadTime = null;
         _isAppOpenShowing = false;
         _loadAppOpenAd();
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
+        print('AdService: App Open ad failed to show: $error');
         ad.dispose();
         _appOpenAd = null;
+        _appOpenLoadTime = null;
         _isAppOpenShowing = false;
         _loadAppOpenAd();
       },
@@ -118,11 +137,13 @@ class AdService {
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) {
+          print('AdService: Interstitial ad loaded successfully');
           _interstitialAd = ad;
           _isInterstitialLoading = false;
           _setupInterstitialCallbacks();
         },
         onAdFailedToLoad: (error) {
+          print('AdService: Interstitial ad failed to load: $error');
           _interstitialAd = null;
           _isInterstitialLoading = false;
         },
@@ -148,11 +169,9 @@ class AdService {
 
   Future<void> showAppOpenAd() async {
     if (!_isSupportedPlatform) {
-      print('AdService: Platform not supported for ads');
       return;
     }
     
-    // Don't show if already showing
     if (_isAppOpenShowing) {
       print('AdService: App Open ad is already showing, skipping');
       return;
@@ -160,50 +179,43 @@ class AdService {
 
     print('AdService: showAppOpenAd called. isAppOpenLoading=$_isAppOpenLoading, hasAd=${_appOpenAd != null}');
 
-    // If ad is already loaded, show it
-    if (_appOpenAd != null) {
+    // If ad is available and valid, show it
+    if (_isAdAvailable()) {
       _isAppOpenShowing = true;
       try {
-        print('AdService: Showing already loaded App Open ad');
+        print('AdService: Showing App Open ad');
         _appOpenAd?.show();
       } catch (e) {
-        print('AdService: Exception showing loaded App Open ad: $e');
+        print('AdService: Exception showing App Open ad: $e');
         _appOpenAd?.dispose();
         _appOpenAd = null;
+        _appOpenLoadTime = null;
         _isAppOpenShowing = false;
         _loadAppOpenAd();
       }
       return;
     }
 
-    // If ad is loading or not available, wait for it with a timeout
-    print('AdService: App Open ad not ready, waiting up to 5 seconds...');
-    
-    // Ensure a load is triggered if not already loading
-    if (!_isAppOpenLoading) {
+    // If ad is loading, wait for it with a shorter timeout and check for failures
+    if (_isAppOpenLoading) {
+      print('AdService: App Open ad is loading, waiting...');
+      for (int i = 0; i < 30; i++) { // Wait up to 3 seconds
+        await Future.delayed(const Duration(milliseconds: 100));
+        if (_isAdAvailable()) {
+          _isAppOpenShowing = true;
+          print('AdService: App Open ad loaded during wait, showing now');
+          _appOpenAd?.show();
+          return;
+        }
+        if (!_isAppOpenLoading && !_isAdAvailable()) {
+          print('AdService: App Open ad failed to load during wait');
+          return;
+        }
+      }
+    } else {
+      // Trigger a load if not loading and not available
       _loadAppOpenAd();
     }
-
-    // Wait up to 5 seconds (50 * 100ms) for the ad to load
-    for (int i = 0; i < 50; i++) {
-      await Future.delayed(const Duration(milliseconds: 100));
-      if (_appOpenAd != null) {
-        print('AdService: App Open ad loaded after ${i * 100}ms, showing now');
-        _isAppOpenShowing = true;
-        try {
-          _appOpenAd?.show();
-        } catch (e) {
-          print('AdService: Exception showing delayed App Open ad: $e');
-          _appOpenAd?.dispose();
-          _appOpenAd = null;
-          _isAppOpenShowing = false;
-          _loadAppOpenAd();
-        }
-        return;
-      }
-    }
-
-    print('AdService: App Open ad failed to load within timeout period');
   }
 
   Future<void> showInterstitialAd() async {
@@ -236,21 +248,8 @@ class AdService {
           return;
         }
       }
-    }
-
-    _loadInterstitialAd();
-    for (int i = 0; i < 30; i++) {
-      await Future.delayed(const Duration(milliseconds: 100));
-      if (_interstitialAd != null) {
-        try {
-          _interstitialAd?.show();
-        } catch (_) {
-          _interstitialAd?.dispose();
-          _interstitialAd = null;
-          _loadInterstitialAd();
-        }
-        return;
-      }
+    } else {
+      _loadInterstitialAd();
     }
   }
 
@@ -259,13 +258,17 @@ class AdService {
       return;
     }
 
-    final prefs = await SharedPreferences.getInstance();
-    final currentCount = prefs.getInt(AppConstants.adAddOperationCounterKey) ?? 0;
-    final nextCount = currentCount + 1;
-    await prefs.setInt(AppConstants.adAddOperationCounterKey, nextCount);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final currentCount = prefs.getInt(AppConstants.adAddOperationCounterKey) ?? 0;
+      final nextCount = currentCount + 1;
+      await prefs.setInt(AppConstants.adAddOperationCounterKey, nextCount);
 
-    if (nextCount % AdConstants.adAddOperationThreshold == 0) {
-      await showInterstitialAd();
+      if (nextCount % AdConstants.adAddOperationThreshold == 0) {
+        await showInterstitialAd();
+      }
+    } catch (e) {
+      print('AdService: Error registering add operation: $e');
     }
   }
 
@@ -273,12 +276,15 @@ class AdService {
     _adTimer?.cancel();
     _adTimer = Timer.periodic(const Duration(minutes: 10), (timer) {
       if (!_isAppOpenShowing) {
-        showAppOpenAd();
+        _loadAppOpenAd(); // Preload for next time if needed
       }
     });
   }
 
   void dispose() {
     _adTimer?.cancel();
+    _appOpenAd?.dispose();
+    _interstitialAd?.dispose();
   }
 }
+

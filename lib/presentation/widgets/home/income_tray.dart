@@ -6,8 +6,12 @@ import 'package:smart_expenses_plan/core/utils/currency_formatter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smart_expenses_plan/presentation/screens/income/add_income_screen.dart';
 
+import 'package:showcaseview/showcaseview.dart';
+
 class IncomeTray extends StatelessWidget {
-  const IncomeTray({super.key});
+  final GlobalKey? showcaseKey;
+  
+  const IncomeTray({super.key, this.showcaseKey});
 
   @override
   Widget build(BuildContext context) {
@@ -93,31 +97,15 @@ class IncomeTray extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        GestureDetector(
-                          onTap: () async {
-                            final result = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const AddIncomeScreen(),
-                              ),
-                            );
-                            if (result == true && context.mounted) {
-                              context.read<HomeBloc>().add(RefreshHomeData());
-                            }
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.add,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ),
-                        ),
+                        showcaseKey != null
+                            ? Showcase(
+                                key: showcaseKey!,
+                                title: 'Add Income',
+                                description: 'Tap here to add your income and track your balance.',
+                                showArrow: true,
+                                child: _buildAddButton(context),
+                              )
+                          : _buildAddButton(context),
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -147,6 +135,34 @@ class IncomeTray extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildAddButton(BuildContext context) {
+    return GestureDetector(
+      onTap: () async {
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const AddIncomeScreen(),
+          ),
+        );
+        if (result == true && context.mounted) {
+          context.read<HomeBloc>().add(RefreshHomeData());
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.2),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(
+          Icons.add,
+          color: Colors.white,
+          size: 20,
+        ),
+      ),
     );
   }
 }

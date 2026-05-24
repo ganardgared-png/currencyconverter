@@ -6,7 +6,7 @@ import 'package:smart_expenses_plan/core/utils/currency_formatter.dart';
 class BarChartWidget extends StatelessWidget {
   final Map<String, double> data;
   final String title;
-  
+
   const BarChartWidget({
     super.key,
     required this.data,
@@ -19,155 +19,115 @@ class BarChartWidget extends StatelessWidget {
     
     if (data.isEmpty) {
       return Center(
-        child: Text(
-          'No data available',
-          style: TextStyle(
-            color: isDark ? AppColors.darkSubtext : Colors.grey,
-          ),
-        ),
-      );
-    }
-
-    final bars = <BarChartGroupData>[];
-    final labels = data.keys.toList();
-    final values = data.values.toList();
-
-    for (int index = 0; index < labels.length; index++) {
-      bars.add(
-        BarChartGroupData(
-          x: index,
-          barRods: [
-            BarChartRodData(
-              toY: values[index],
-              color: AppColors.chartColors[index % AppColors.chartColors.length],
-              width: 20,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(4),
-              ),
-            ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.bar_chart_rounded, size: 48, color: isDark ? AppColors.darkSubtext : Colors.grey[300]),
+            const SizedBox(height: 8),
+            Text('No comparison data', style: TextStyle(color: isDark ? AppColors.darkSubtext : Colors.grey)),
           ],
         ),
       );
     }
 
-    // Calculate label interval to prevent overlapping
-    int labelInterval = 1;
-    if (labels.length > 24) {
-      labelInterval = 3;
-    } else if (labels.length > 12) {
-      labelInterval = 2;
-    }
+    final labels = data.keys.toList();
+    final values = data.values.toList();
+    final maxVal = values.isNotEmpty ? values.reduce((a, b) => a > b ? a : b) : 0.0;
 
-    return BarChart(
-      BarChartData(
-        alignment: BarChartAlignment.spaceAround,
-        maxY: data.values.reduce((a, b) => a > b ? a : b) * 1.1,
-        barTouchData: BarTouchData(
-          enabled: true,
-          touchTooltipData: BarTouchTooltipData(
-            tooltipBgColor: isDark ? AppColors.darkSurface : Colors.white,
-            getTooltipItem: (group, groupIndex, rod, rodIndex) {
-              final category = data.keys.elementAt(group.x);
-              return BarTooltipItem(
-                '$category\n${CurrencyFormatter.format(rod.toY)}',
-                TextStyle(
-                  color: isDark ? Colors.white : Colors.black,
-                  fontWeight: FontWeight.bold,
-                ),
-              );
-            },
-          ),
-        ),
-        titlesData: FlTitlesData(
-          show: true,
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 100,
-              interval: labelInterval.toDouble(),
-              getTitlesWidget: (value, meta) {
-                final index = value.toInt();
-                if (index >= 0 && index < labels.length && index % labelInterval == 0) {
-                  final label = labels[index];
-                  
-                  // For comparison data, format better
-                  String displayLabel = label;
-                  if (label.contains('\n')) {
-                    // Already formatted with newlines
-                    displayLabel = label;
-                  } else if (label.contains(' (Pay)')) {
-                    displayLabel = label.replaceAll(' (Pay)', '\nPay');
-                  } else if (label.contains(' (Exp)')) {
-                    displayLabel = label.replaceAll(' (Exp)', '\nExp');
-                  }
-                  
-                  // Abbreviate labels
-                  final parts = displayLabel.split('\n');
-                  String abbreviated = parts[0];
-                  if (abbreviated.length > 3) {
-                    abbreviated = abbreviated.substring(0, 3);
-                  }
-                  if (parts.length > 1) {
-                    abbreviated += '\n${parts[1].substring(0, 1)}';
-                  }
-                  
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Transform.rotate(
-                      angle: -0.785, // -45 degrees in radians
-                      child: Text(
-                        abbreviated,
-                        style: TextStyle(
-                          fontSize: 9,
-                          color: isDark ? Colors.white : Colors.black,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 16),
+        Expanded(
+          child: BarChart(
+            BarChartData(
+              alignment: BarChartAlignment.spaceAround,
+              maxY: maxVal * 1.2,
+              barGroups: List.generate(labels.length, (index) {
+                final color = AppColors.chartColors[index % AppColors.chartColors.length];
+                return BarChartGroupData(
+                  x: index,
+                  barRods: [
+                    BarChartRodData(
+                      toY: values[index],
+                      gradient: LinearGradient(
+                        colors: [color, color.withOpacity(0.6)],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                      width: 14,
+                      borderRadius: BorderRadius.circular(4),
+                      backDrawRodData: BackgroundBarChartRodData(
+                        show: true,
+                        toY: maxVal * 1.2,
+                        color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03),
                       ),
                     ),
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              getTitlesWidget: (value, meta) {
-                return Text(
-                  CurrencyFormatter.format(value, currency: 'TZS').replaceAll('TZS ', ''),
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: isDark ? Colors.white : Colors.black,
-                  ),
+                  ],
                 );
-              },
+              }),
+              barTouchData: BarTouchData(
+                enabled: true,
+                touchTooltipData: BarTouchTooltipData(
+                  tooltipBgColor: isDark ? AppColors.darkSurface.withOpacity(0.9) : Colors.white.withOpacity(0.9),
+                  tooltipRoundedRadius: 10,
+                  getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                    return BarTooltipItem(
+                      '${labels[group.x].replaceAll('\n', ' ')}\n${CurrencyFormatter.format(rod.toY).split('.')[0]}',
+                      TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold, fontSize: 12),
+                    );
+                  },
+                ),
+              ),
+              titlesData: FlTitlesData(
+                show: true,
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 32,
+                    getTitlesWidget: (value, meta) {
+                      final index = value.toInt();
+                      if (index < 0 || index >= labels.length) return const SizedBox.shrink();
+                      String label = labels[index].split('\n')[0];
+                      if (label.length > 5) label = label.substring(0, 4);
+                      return SideTitleWidget(
+                        axisSide: meta.axisSide,
+                        space: 8,
+                        child: Text(label, style: TextStyle(fontSize: 9, color: isDark ? AppColors.darkSubtext : Colors.grey[600])),
+                      );
+                    },
+                  ),
+                ),
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 40,
+                    getTitlesWidget: (value, meta) {
+                      if (value == 0) return const SizedBox.shrink();
+                      String formatted = value >= 1000000 ? '${(value/1000000).toStringAsFixed(1)}M' : (value >= 1000 ? '${(value/1000).toStringAsFixed(0)}k' : value.toStringAsFixed(0));
+                      return SideTitleWidget(
+                        axisSide: meta.axisSide,
+                        space: 8,
+                        child: Text(formatted, style: TextStyle(fontSize: 9, color: isDark ? AppColors.darkSubtext : Colors.grey[500])),
+                      );
+                    },
+                  ),
+                ),
+                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              ),
+              gridData: FlGridData(
+                show: true,
+                drawVerticalLine: false,
+                horizontalInterval: maxVal > 0 ? maxVal / 4 : 1000,
+                getDrawingHorizontalLine: (value) => FlLine(color: isDark ? Colors.white10 : Colors.black.withOpacity(0.04), strokeWidth: 1),
+              ),
+              borderData: FlBorderData(show: false),
             ),
-          ),
-          rightTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          topTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
           ),
         ),
-        borderData: FlBorderData(
-          show: true,
-          border: Border(
-            bottom: BorderSide(
-              color: isDark ? AppColors.darkSubtext : Colors.grey[300]!,
-            ),
-            left: BorderSide(
-              color: isDark ? AppColors.darkSubtext : Colors.grey[300]!,
-            ),
-          ),
-        ),
-        gridData: const FlGridData(show: false),
-        barGroups: bars,
-      ),
+      ],
     );
   }
-}
+}

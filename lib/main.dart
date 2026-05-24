@@ -15,9 +15,11 @@ import 'package:smart_expenses_plan/data/repositories/auth_repository.dart';
 import 'package:smart_expenses_plan/data/repositories/expense_repository.dart';
 import 'package:smart_expenses_plan/data/repositories/payment_repository.dart';
 import 'package:smart_expenses_plan/data/repositories/income_repository.dart';
+import 'package:smart_expenses_plan/data/repositories/budget_repository.dart';
 import 'package:smart_expenses_plan/bloc/home/home_bloc.dart';
 import 'package:smart_expenses_plan/bloc/expense/expense_bloc.dart';
 import 'package:smart_expenses_plan/bloc/payment/payment_bloc.dart';
+import 'package:smart_expenses_plan/bloc/budget/budget_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -58,6 +60,7 @@ void main() async {
           RepositoryProvider(create: (_) => ExpenseRepository()),
           RepositoryProvider(create: (_) => PaymentRepository()),
           RepositoryProvider(create: (_) => IncomeRepository()),
+          RepositoryProvider(create: (_) => BudgetRepository()),
         ],
         child: MultiBlocProvider(
           providers: [
@@ -67,6 +70,7 @@ void main() async {
                 expenseRepository: context.read<ExpenseRepository>(),
                 authRepository: context.read<AuthRepository>(),
                 incomeRepository: context.read<IncomeRepository>(),
+                budgetRepository: context.read<BudgetRepository>(),
               )..add(LoadHomeData()),
             ),
             BlocProvider(
@@ -78,6 +82,11 @@ void main() async {
               create: (context) => PaymentBloc(
                 paymentRepository: context.read<PaymentRepository>(),
               )..add(LoadPayments()),
+            ),
+            BlocProvider(
+              create: (context) => BudgetBloc(
+                budgetRepository: context.read<BudgetRepository>(),
+              )..add(LoadBudgets()),
             ),
           ],
           child: MultiProvider(
@@ -100,14 +109,12 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  DateTime? _pausedTime;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // Show app open ad on initial launch
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      AdService.instance.showAppOpenAd();
-    });
   }
 
   @override
@@ -118,8 +125,20 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      AdService.instance.showAppOpenAd();
+    if (state == AppLifecycleState.paused) {
+      _pausedTime = DateTime.now();
+    } else if (state == AppLifecycleState.resumed) {
+      if (_pausedTime != null) {
+        final timeInBackground = DateTime.now().difference(_pausedTime!);
+        // Only show App Open ad if the app was in the background for more than 5 minutes (300 seconds)
+        if (timeInBackground.inMinutes >= 5) {
+          print('Main: App returned from background after ${timeInBackground.inMinutes}m, showing App Open ad');
+          AdService.instance.showAppOpenAd();
+        } else {
+          print('Main: App returned from background after only ${timeInBackground.inSeconds}s, skipping App Open ad to protect UX (requires 10 minutes)');
+        }
+        _pausedTime = null; // Reset
+      }
     }
   }
 

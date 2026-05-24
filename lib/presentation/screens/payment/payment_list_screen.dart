@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:smart_expenses_plan/core/utils/currency_formatter.dart';
 import 'package:smart_expenses_plan/services/payment_status_service.dart';
 import 'package:smart_expenses_plan/bloc/payment/payment_bloc.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
 class PaymentListScreen extends StatefulWidget {
   final String? filter;
@@ -139,13 +140,24 @@ class _PaymentListScreenState extends State<PaymentListScreen> {
                 
                 // Payments List
                 Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: filteredPayments.length,
-                    itemBuilder: (context, index) {
-                      final payment = filteredPayments[index];
-                      return _buildPaymentCard(payment);
-                    },
+                  child: AnimationLimiter(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: filteredPayments.length,
+                      itemBuilder: (context, index) {
+                        final payment = filteredPayments[index];
+                        return AnimationConfiguration.staggeredList(
+                          position: index,
+                          duration: const Duration(milliseconds: 375),
+                          child: SlideAnimation(
+                            verticalOffset: 50.0,
+                            child: FadeInAnimation(
+                              child: _buildPaymentCard(payment),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
               ],

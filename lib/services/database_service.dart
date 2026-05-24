@@ -21,10 +21,66 @@ class DatabaseService {
     
     return await openDatabase(
       path,
-      version: 1,
+      version: 3,
       onCreate: _createDB,
+      onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
     );
+  }
+
+  Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    // Version 2: Added budgets and budget_expenses tables
+    if (oldVersion < 2) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS budgets (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          amount REAL NOT NULL,
+          date TEXT NOT NULL,
+          status TEXT DEFAULT 'unconfirmed',
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+      ''');
+
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS budget_expenses (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          budget_id INTEGER NOT NULL,
+          category TEXT NOT NULL,
+          amount REAL NOT NULL,
+          note TEXT,
+          is_paid INTEGER DEFAULT 0,
+          FOREIGN KEY (budget_id) REFERENCES budgets (id) ON DELETE CASCADE
+        )
+      ''');
+    }
+    
+    // Version 3: Ensure budgets/budget_expenses exist for ALL users
+    // (catches users who had version 1 with budgets in onCreate AND users upgrading from v1 directly to v3)
+    if (oldVersion < 3) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS budgets (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          amount REAL NOT NULL,
+          date TEXT NOT NULL,
+          status TEXT DEFAULT 'unconfirmed',
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+      ''');
+
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS budget_expenses (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          budget_id INTEGER NOT NULL,
+          category TEXT NOT NULL,
+          amount REAL NOT NULL,
+          note TEXT,
+          is_paid INTEGER DEFAULT 0,
+          FOREIGN KEY (budget_id) REFERENCES budgets (id) ON DELETE CASCADE
+        )
+      ''');
+    }
   }
   
   Future _onConfigure(Database db) async {
@@ -214,6 +270,31 @@ class DatabaseService {
         backup_frequency TEXT,
         last_backup TEXT,
         auto_backup_enabled INTEGER DEFAULT 0
+      )
+    ''');
+
+    // Budgets table
+    await db.execute('''
+      CREATE TABLE budgets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        amount REAL NOT NULL,
+        date TEXT NOT NULL,
+        status TEXT DEFAULT 'unconfirmed',
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    ''');
+
+    // Budget expenses table
+    await db.execute('''
+      CREATE TABLE budget_expenses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        budget_id INTEGER NOT NULL,
+        category TEXT NOT NULL,
+        amount REAL NOT NULL,
+        note TEXT,
+        is_paid INTEGER DEFAULT 0,
+        FOREIGN KEY (budget_id) REFERENCES budgets (id) ON DELETE CASCADE
       )
     ''');
   }

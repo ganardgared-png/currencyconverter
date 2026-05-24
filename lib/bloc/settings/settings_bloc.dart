@@ -5,6 +5,7 @@ import 'package:smart_expenses_plan/data/repositories/backup_repository.dart';
 import 'package:smart_expenses_plan/data/models/backup_model.dart';
 import 'package:smart_expenses_plan/core/utils/backup_helper.dart';
 import 'package:smart_expenses_plan/services/notification_service.dart';
+import 'package:smart_expenses_plan/data/providers/database_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 part 'settings_event.dart';

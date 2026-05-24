@@ -26,6 +26,7 @@ class HomeLoaded extends HomeState {
   final Map<String, double> expenseCategories;
   final List<PaymentPlanModel> recentPayments;
   final List<ExpenseModel> recentExpenses;
+  final int budgetCount;
   
   const HomeLoaded({
     required this.income,
@@ -36,6 +37,7 @@ class HomeLoaded extends HomeState {
     required this.paidTotal,
     required this.missedCount,
     required this.missedTotal,
+    required this.budgetCount,
     required this.totalPaidThisMonth,
     required this.totalExpensesThisMonth,
     required this.paymentCategories,
@@ -54,6 +56,7 @@ class HomeLoaded extends HomeState {
     paidTotal,
     missedCount,
     missedTotal,
+    budgetCount,
     totalPaidThisMonth,
     totalExpensesThisMonth,
     paymentCategories,

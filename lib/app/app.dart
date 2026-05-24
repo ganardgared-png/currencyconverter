@@ -21,6 +21,12 @@ import 'package:smart_expenses_plan/presentation/screens/income/income_list_scre
 import 'package:smart_expenses_plan/presentation/screens/settings/settings_screen.dart';
 import 'package:smart_expenses_plan/presentation/screens/backup/backup_setup_screen.dart';
 import 'package:smart_expenses_plan/presentation/screens/backup/restore_screen.dart';
+import 'package:smart_expenses_plan/presentation/screens/budget/add_budget_screen.dart';
+import 'package:smart_expenses_plan/presentation/screens/budget/budget_list_screen.dart';
+import 'package:smart_expenses_plan/presentation/screens/budget/budget_detail_screen.dart';
+import 'package:smart_expenses_plan/presentation/screens/expense/add_receipt_screen.dart';
+import 'package:smart_expenses_plan/presentation/screens/expense/receipt_preview_screen.dart';
+import 'package:smart_expenses_plan/services/receipt_service.dart';
 
 class AppRouter {
   static final router = GoRouter(
@@ -152,6 +158,36 @@ class AppRouter {
         path: '/restore',
         name: 'restore',
         builder: (context, state) => const RestoreScreen(),
+      ),
+      GoRoute(
+        path: '/add-budget',
+        name: 'add-budget',
+        builder: (context, state) => const AddBudgetScreen(),
+      ),
+      GoRoute(
+        path: '/budgets',
+        name: 'budgets',
+        builder: (context, state) => const BudgetListScreen(),
+      ),
+      GoRoute(
+        path: '/budget-detail/:id',
+        name: 'budget-detail',
+        builder: (context, state) => BudgetDetailScreen(
+          budgetId: int.parse(state.pathParameters['id']!),
+        ),
+      ),
+      GoRoute(
+        path: '/add-receipt',
+        name: 'add-receipt',
+        builder: (context, state) => const AddReceiptScreen(),
+      ),
+      GoRoute(
+        path: '/receipt-preview',
+        name: 'receipt-preview',
+        builder: (context, state) {
+          final data = state.extra as ReceiptData;
+          return ReceiptPreviewScreen(receiptData: data);
+        },
       ),
     ],
   );

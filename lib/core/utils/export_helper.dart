@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:smart_expenses_plan/data/models/payment_plan_model.dart';
 import 'package:smart_expenses_plan/data/models/expense_model.dart';
 import 'package:smart_expenses_plan/data/models/income_model.dart';
+import 'package:smart_expenses_plan/data/models/budget_model.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
 
@@ -63,6 +64,7 @@ class ExportHelper {
     required List<PaymentPlanModel> payments,
     required List<ExpenseModel> expenses,
     required List<IncomeModel> incomes,
+    required List<BudgetModel> budgets,
     required String fileName,
   }) async {
     var excel = Excel.createExcel();
@@ -144,9 +146,46 @@ class ExportHelper {
         income.notes ?? '',
       ]);
     }
+
+    // Budgets Sheet
+    Sheet budgetSheet = excel['Budgets'];
+    budgetSheet.appendRow([
+      'Budget Name',
+      'Goal Amount',
+      'Used Amount',
+      'Remaining',
+      'Date',
+      'Status',
+    ]);
+
+    for (var budget in budgets) {
+      final usedAmount = budget.expenses.fold(0.0, (sum, e) => sum + e.amount);
+      budgetSheet.appendRow([
+        budget.name,
+        budget.amount.toString(),
+        usedAmount.toString(),
+        (budget.amount - usedAmount).toString(),
+        DateFormat('yyyy-MM-dd').format(budget.date),
+        budget.status,
+      ]);
+
+      // Add actual expenses for this budget as indented rows
+      if (budget.expenses.isNotEmpty) {
+        budgetSheet.appendRow(['  Category', '  Amount', '  Note', '  Paid']);
+        for (var e in budget.expenses) {
+          budgetSheet.appendRow([
+            '  ${e.category}',
+            '  ${e.amount}',
+            '  ${e.note ?? ""}',
+            '  ${e.isPaid ? "Yes" : "No"}',
+          ]);
+        }
+        budgetSheet.appendRow([]); // spacer
+      }
+    }
     
     // Auto-fit column widths (approximation)
-    for (var sheet in [paymentSheet, expenseSheet, incomeSheet]) {
+    for (var sheet in [paymentSheet, expenseSheet, incomeSheet, budgetSheet]) {
       sheet.setColWidth(1, 25.0); // Name/Source
       sheet.setColWidth(2, 15.0); // Amount
       sheet.setColWidth(3, 15.0); // Type/Category
@@ -180,6 +219,11 @@ class ExportHelper {
       'Net Balance',
       (incomes.fold(0.0, (sum, item) => sum + item.amount) - expenses.fold(0.0, (sum, item) => sum + item.amount) + payments.where((p) => p.status == 'paid').fold(0.0, (sum, item) => sum + item.amount)).toString()
     ]);
+    summarySheet.appendRow(['Total Budgets', budgets.length.toString()]);
+    summarySheet.appendRow([
+      'Total Budget Goal',
+      budgets.fold(0.0, (sum, item) => sum + item.amount).toString()
+    ]);
     
     // Summary Sheet formatting
     summarySheet.setColWidth(0, 25.0);
@@ -198,6 +242,7 @@ class ExportHelper {
     required List<PaymentPlanModel> payments,
     required List<ExpenseModel> expenses,
     required List<IncomeModel> incomes,
+    required List<BudgetModel> budgets,
     required String fileName,
   }) async {
     final pdf = pw.Document();
@@ -273,6 +318,9 @@ class ExportHelper {
                   'Net Balance: ${_formatAmount(incomes.fold(0.0, (sum, item) => sum + item.amount) - expenses.fold(0.0, (sum, item) => sum + item.amount) + payments.where((p) => p.status == 'paid').fold(0.0, (sum, item) => sum + item.amount))}',
                   style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
                 ),
+                pw.SizedBox(height: 5),
+                pw.Text('Total Budgets: ${budgets.length}'),
+                pw.Text('Total Budget Goal: ${_formatAmount(budgets.fold(0.0, (sum, item) => sum + item.amount))}'),
               ],
             ),
           ),
@@ -364,6 +412,57 @@ class ExportHelper {
               ],
             ),
           ),
+
+          // Budgets Section
+          if (budgets.isNotEmpty) ...[
+            pw.Container(
+              margin: const pw.EdgeInsets.only(bottom: 20),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    'Budgets',
+                    style: pw.TextStyle(
+                      fontSize: 18,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                  pw.SizedBox(height: 10),
+                  ...budgets.map((b) {
+                    final used = b.expenses.fold(0.0, (sum, e) => sum + e.amount);
+                    return pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Container(
+                          padding: const pw.EdgeInsets.all(5),
+                          color: PdfColors.grey300,
+                          child: pw.Row(
+                            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                            children: [
+                              pw.Text('${b.name} (${DateFormat('MMM yyyy').format(b.date)})', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                              pw.Text('Goal: ${_formatAmount(b.amount)} | Used: ${_formatAmount(used)}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                        if (b.expenses.isNotEmpty)
+                          pw.TableHelper.fromTextArray(
+                            headers: ['Category', 'Amount', 'Paid', 'Note'],
+                            data: b.expenses.map((e) => [
+                              e.category,
+                              _formatAmount(e.amount),
+                              e.isPaid ? 'Yes' : 'No',
+                              e.note ?? '',
+                            ]).toList(),
+                            border: pw.TableBorder.all(),
+                          ),
+                        pw.SizedBox(height: 10),
+                      ],
+                    );
+                  }).toList(),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -381,6 +480,7 @@ class ExportHelper {
     required List<PaymentPlanModel> payments,
     required List<ExpenseModel> expenses,
     required List<IncomeModel> incomes,
+    required List<BudgetModel> budgets,
     required String fileName,
   }) async {
     List<List<dynamic>> rows = [];
@@ -437,6 +537,32 @@ class ExportHelper {
         'N/A',
         expense.notes ?? '',
       ]);
+    }
+
+    // Add budgets
+    for (var budget in budgets) {
+      rows.add([
+        'Budget',
+        budget.name,
+        budget.amount,
+        'TZS',
+        'Goal',
+        DateFormat('yyyy-MM-dd').format(budget.date),
+        budget.status,
+        '',
+      ]);
+      for (var e in budget.expenses) {
+        rows.add([
+          'Budget Expense',
+          budget.name,
+          e.amount,
+          'TZS',
+          e.category,
+          DateFormat('yyyy-MM-dd').format(budget.date),
+          e.isPaid ? 'Paid' : 'Unpaid',
+          e.note ?? '',
+        ]);
+      }
     }
     
     String csv = const ListToCsvConverter(

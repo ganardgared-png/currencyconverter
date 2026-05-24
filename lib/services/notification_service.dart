@@ -39,6 +39,9 @@ class NotificationService {
     
     // Create notification channels
     await _createNotificationChannels();
+
+    // Schedule periodic app usage reminders
+    await scheduleAppUsageReminders();
   }
 
   static Future<void> requestPermissions() async {
@@ -96,6 +99,20 @@ class NotificationService {
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(expenseChannel);
+
+    // App usage channel
+    final AndroidNotificationChannel appUsageChannel = AndroidNotificationChannel(
+      'app_usage_reminders',
+      'App Usage Reminders',
+      description: 'Periodic reminders to use the app',
+      importance: Importance.high,
+      playSound: true,
+      enableVibration: true,
+    );
+    await _notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(appUsageChannel);
   }
 
   static void _onNotificationTap(NotificationResponse response) {
@@ -288,6 +305,66 @@ class NotificationService {
       title: title,
       body: body,
       notificationDetails: notificationDetails,
+    );
+  }
+
+  static Future<void> scheduleAppUsageReminders() async {
+    // 1. Daily at 9:00 AM
+    await _scheduleDailyReminder(
+      id: 1001,
+      hour: 9,
+      minute: 0,
+      title: 'Good Morning!',
+      body: 'Time to record your morning expenses and check your budget.',
+    );
+
+    // 2. Every 6 hours (6 AM, 12 PM, 6 PM, 12 AM)
+    final hours = [0, 6, 12, 18];
+    for (var i = 0; i < hours.length; i++) {
+      await _scheduleDailyReminder(
+        id: 1100 + i,
+        hour: hours[i],
+        minute: 0,
+        title: 'Smart Expenses Reminder',
+        body: 'Don\'t forget to track your latest spending to keep your budget accurate.',
+      );
+    }
+  }
+
+  static Future<void> _scheduleDailyReminder({
+    required int id,
+    required int hour,
+    required int minute,
+    required String title,
+    required String body,
+  }) async {
+    final now = DateTime.now();
+    var scheduledDate = DateTime(now.year, now.month, now.day, hour, minute);
+    
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+
+    final androidDetails = AndroidNotificationDetails(
+      'app_usage_reminders',
+      'App Usage Reminders',
+      importance: Importance.high,
+      priority: Priority.high,
+      ongoing: false,
+      playSound: true,
+      enableVibration: true,
+    );
+    
+    const iosDetails = DarwinNotificationDetails();
+    
+    await _notificationsPlugin.zonedSchedule(
+      id: id,
+      title: title,
+      body: body,
+      scheduledDate: tz.TZDateTime.from(scheduledDate, tz.local),
+      notificationDetails: NotificationDetails(android: androidDetails, iOS: iosDetails),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time, // This makes it recur daily
     );
   }
 }

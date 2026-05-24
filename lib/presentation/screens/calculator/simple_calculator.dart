@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:smart_expenses_plan/core/constants/colors.dart';
 import 'package:math_expressions/math_expressions.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
 class SimpleCalculator extends StatefulWidget {
   const SimpleCalculator({super.key});
@@ -122,19 +123,30 @@ class _SimpleCalculatorState extends State<SimpleCalculator> {
           
           // Buttons
           Expanded(
-            child: GridView.builder(
-              padding: const EdgeInsets.all(8),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                childAspectRatio: 1.2,
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 8,
+            child: AnimationLimiter(
+              child: GridView.builder(
+                padding: const EdgeInsets.all(8),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 4,
+                  childAspectRatio: 1.2,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                ),
+                itemCount: _buttons.length,
+                itemBuilder: (context, index) {
+                  final button = _buttons[index];
+                  return AnimationConfiguration.staggeredGrid(
+                    position: index,
+                    columnCount: 4,
+                    duration: const Duration(milliseconds: 375),
+                    child: ScaleAnimation(
+                      child: FadeInAnimation(
+                        child: _buildButton(button),
+                      ),
+                    ),
+                  );
+                },
               ),
-              itemCount: _buttons.length,
-              itemBuilder: (context, index) {
-                final button = _buttons[index];
-                return _buildButton(button);
-              },
             ),
           ),
         ],

@@ -6,7 +6,13 @@ import 'package:smart_expenses_plan/presentation/screens/home/calendar_tab.dart'
 import 'package:smart_expenses_plan/presentation/screens/home/calculator_tab.dart';
 import 'package:smart_expenses_plan/presentation/screens/home/comparison_tab.dart';
 import 'package:smart_expenses_plan/presentation/screens/home/profile_tab.dart';
-import 'package:smart_expenses_plan/presentation/widgets/home/draggable_floating_action_button.dart';
+import 'package:smart_expenses_plan/presentation/widgets/common/banner_ad_widget.dart';
+import 'package:upgrader/upgrader.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'dart:async';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'package:showcaseview/showcaseview.dart';
+import 'package:smart_expenses_plan/services/onboarding_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,7 +24,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   late PageController _pageController;
-  late Offset _fabPosition;
+  bool _isOnline = true;
+  late StreamSubscription<ConnectivityResult> _connectivitySubscription;
   
   final List<Widget> _tabs = [
     const HomeTab(),
@@ -32,173 +39,201 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: _currentIndex);
-    _fabPosition = const Offset(0, 0);
+    
+    _checkConnectivity();
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
+      if (mounted) {
+        setState(() {
+          _isOnline = result != ConnectivityResult.none;
+        });
+      }
+    });
+  }
+
+
+  Future<void> _checkConnectivity() async {
+    final result = await Connectivity().checkConnectivity();
+    if (mounted) {
+      setState(() {
+        _isOnline = result != ConnectivityResult.none;
+      });
+    }
   }
 
   @override
   void dispose() {
     _pageController.dispose();
+    _connectivitySubscription.cancel();
     super.dispose();
   }
   
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return Scaffold(
-      body: Stack(
-        children: [
-          PageView(
-            controller: _pageController,
-            onPageChanged: (index) {
-              setState(() => _currentIndex = index);
-            },
-            children: _tabs,
-          ),
-          Positioned(
-            right: _fabPosition.dx,
-            bottom: _fabPosition.dy,
-            child: DraggableFloatingActionButton(
-              onPressed: _showAddOptions,
-              onPositionChanged: (offset) {
-                setState(() {
-                  _fabPosition = offset;
-                });
-              },
+      
+    return ShowCaseWidget(
+      blurValue: 1.5,
+      autoPlay: false,
+      onFinish: () async {
+        await OnboardingService.markHomeTourCompleted();
+      },
+      builder: (context) => Builder(
+        builder: (context) {
+          // Trigger tour here using the builder context which has ShowCaseWidget as ancestor
+          _checkTourStatus(context);
+          
+          return UpgradeAlert(
+            upgrader: Upgrader(),
+            child: Scaffold(
+              body: Column(
+                children: [
+                  Expanded(
+                    child: PageView(
+                      controller: _pageController,
+                      onPageChanged: (index) {
+                        setState(() => _currentIndex = index);
+                      },
+                      children: _tabs,
+                    ),
+                  ),
+                  const BannerAdWidget(),
+                ],
+              ),
+              floatingActionButton: _buildSpeedDial(isDark),
+              floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+              bottomNavigationBar: _buildBottomBar(isDark),
             ),
-          ),
-        ],
-      ),
-      floatingActionButton: null,
-      bottomNavigationBar: BottomAppBar(
-        color: isDark ? AppColors.darkSurface : Colors.white,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildNavItem(0, Icons.home_outlined, Icons.home, 'Home'),
-              _buildNavItem(1, Icons.calendar_today_outlined, Icons.calendar_today, 'Calendar'),
-              _buildNavItem(2, Icons.calculate_outlined, Icons.calculate, 'Calc'),
-              _buildNavItem(3, Icons.compare_arrows_outlined, Icons.compare_arrows, 'Compare'),
-              _buildNavItem(4, Icons.person_outline, Icons.person, 'Profile'),
-            ],
-          ),
-        ),
+          );
+        }
       ),
     );
   }
-  
-  Widget _buildNavItem(int index, IconData outlinedIcon, IconData filledIcon, String label) {
-    final isSelected = _currentIndex == index;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return InkWell(
-      onTap: () {
+
+  Future<void> _checkTourStatus(BuildContext context) async {
+    final completed = await OnboardingService.isHomeTourCompleted();
+    if (!completed && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ShowCaseWidget.of(context).startShowCase([
+          OnboardingService.incomeKey,
+          OnboardingService.statsKey,
+          OnboardingService.chartKey,
+          OnboardingService.quickActionsKey,
+          OnboardingService.fabKey,
+        ]);
+      });
+    }
+  }
+
+  Widget _buildBottomBar(bool isDark) {
+    return BottomNavigationBar(
+      currentIndex: _currentIndex,
+      type: BottomNavigationBarType.fixed,
+      backgroundColor: isDark ? const Color(0xFF1A1F2E) : Colors.white,
+      selectedItemColor: AppColors.primary,
+      unselectedItemColor: isDark ? Colors.grey[600] : Colors.grey[400],
+      selectedFontSize: 11,
+      unselectedFontSize: 11,
+      elevation: 16,
+      onTap: (index) {
+        setState(() => _currentIndex = index);
         _pageController.animateToPage(
           index,
-          duration: const Duration(milliseconds: 300),
+          duration: const Duration(milliseconds: 350),
           curve: Curves.easeInOut,
         );
       },
-      borderRadius: BorderRadius.circular(20),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isSelected ? filledIcon : outlinedIcon,
-              color: isSelected 
-                ? AppColors.primary 
-                : (isDark ? AppColors.darkSubtext : Colors.grey),
-              size: 24,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                color: isSelected 
-                  ? AppColors.primary 
-                  : (isDark ? AppColors.darkSubtext : Colors.grey),
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
-      ),
+      items: const [
+        BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
+        BottomNavigationBarItem(icon: Icon(Icons.calendar_today_rounded), label: 'Calendar'),
+        BottomNavigationBarItem(icon: Icon(Icons.analytics_rounded), label: 'Calculator'),
+        BottomNavigationBarItem(icon: Icon(Icons.insights_rounded), label: 'Trending'),
+        BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: 'Profile'),
+      ],
     );
   }
-  
-  void _showAddOptions() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
+
+  Widget _buildSpeedDial(bool isDark) {
+    return Showcase(
+      key: OnboardingService.fabKey,
+      title: 'Quick Actions',
+      description: 'Access all features here: Receipts, Budgets, Payments & Expenses.',
+      showArrow: true,
+      child: SpeedDial(
+        icon: Icons.add,
+        activeIcon: Icons.close,
+        spacing: 12,
+        mini: false,
+        childPadding: const EdgeInsets.all(5),
+        spaceBetweenChildren: 12,
+        dialRoot: (context, open, toggleView) {
+          return GestureDetector(
+            onTap: toggleView,
+            child: Container(
+              width: 56,
+              height: 56,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
+                gradient: AppColors.primaryGradient,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.35),
+                    blurRadius: 15,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Icon(
+                open ? Icons.close : Icons.add,
+                color: Colors.white,
+                size: 28,
               ),
             ),
-            const SizedBox(height: 20),
-            ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.payment, color: AppColors.primary),
-              ),
-              title: const Text(
-                'Add Payment Plan',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              subtitle: Text('Schedule a new payment'),
-              onTap: () {
-                Navigator.pop(context);
-                if (mounted) {
-                  context.push('/add-payment');
-                }
-              },
-            ),
-            ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.accent.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.receipt, color: AppColors.accent),
-              ),
-              title: const Text(
-                'Add Expense',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              subtitle: Text('Record a new expense'),
-              onTap: () {
-                Navigator.pop(context);
-                if (mounted) {
-                  context.push('/add-expense');
-                }
-              },
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
+          );
+        },
+        buttonSize: const Size(56, 56),
+        childrenButtonSize: const Size(56, 56),
+        visible: true,
+        direction: SpeedDialDirection.up,
+        curve: Curves.elasticOut,
+        overlayColor: Colors.black,
+        overlayOpacity: 0.5,
+        elevation: 8.0,
+        shape: const CircleBorder(),
+        children: [
+          SpeedDialChild(
+            child: const Icon(Icons.receipt_long_rounded),
+            backgroundColor: Colors.purple,
+            foregroundColor: Colors.white,
+            label: 'Add Receipt',
+            labelStyle: const TextStyle(fontSize: 16.0, fontWeight: FontWeight.w500),
+            onTap: () => context.push('/add-receipt'),
+          ),
+          SpeedDialChild(
+            child: const Icon(Icons.account_balance_wallet_rounded),
+            backgroundColor: Colors.orange,
+            foregroundColor: Colors.white,
+            label: 'Add Budget',
+            labelStyle: const TextStyle(fontSize: 16.0, fontWeight: FontWeight.w500),
+            onTap: () => context.push('/add-budget'),
+          ),
+          SpeedDialChild(
+            child: const Icon(Icons.payment_rounded),
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            label: 'Add Payment',
+            labelStyle: const TextStyle(fontSize: 16.0, fontWeight: FontWeight.w500),
+            onTap: () => context.push('/add-payment'),
+          ),
+          SpeedDialChild(
+            child: const Icon(Icons.receipt_rounded),
+            backgroundColor: AppColors.accent,
+            foregroundColor: Colors.white,
+            label: 'Add Expense',
+            labelStyle: const TextStyle(fontSize: 16.0, fontWeight: FontWeight.w500),
+            onTap: () => context.push('/add-expense'),
+          ),
+        ],
       ),
     );
   }
-}
+}

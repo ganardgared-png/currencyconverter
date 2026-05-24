@@ -3,17 +3,20 @@ import 'package:smart_expenses_plan/core/utils/export_helper.dart';
 import 'package:smart_expenses_plan/data/repositories/payment_repository.dart';
 import 'package:smart_expenses_plan/data/repositories/expense_repository.dart';
 import 'package:smart_expenses_plan/data/repositories/income_repository.dart';
+import 'package:smart_expenses_plan/data/repositories/budget_repository.dart';
 import 'package:share_plus/share_plus.dart';
 
 class ExportService {
   final PaymentRepository _paymentRepository = PaymentRepository();
   final ExpenseRepository _expenseRepository = ExpenseRepository();
   final IncomeRepository _incomeRepository = IncomeRepository();
+  final BudgetRepository _budgetRepository = BudgetRepository();
 
   Future<String> exportToPDF() async {
     final payments = await _paymentRepository.getAllPayments();
     final expenses = await _expenseRepository.getAllExpenses();
     final incomes = await _incomeRepository.getAllIncomes();
+    final budgets = await _budgetRepository.getAllBudgets();
     
     final fileName = 'export_${DateTime.now().millisecondsSinceEpoch}';
     
@@ -21,6 +24,7 @@ class ExportService {
       payments: payments,
       expenses: expenses,
       incomes: incomes,
+      budgets: budgets,
       fileName: fileName,
     );
   }
@@ -29,6 +33,7 @@ class ExportService {
     final payments = await _paymentRepository.getAllPayments();
     final expenses = await _expenseRepository.getAllExpenses();
     final incomes = await _incomeRepository.getAllIncomes();
+    final budgets = await _budgetRepository.getAllBudgets();
     
     final fileName = 'export_${DateTime.now().millisecondsSinceEpoch}';
     
@@ -36,6 +41,7 @@ class ExportService {
       payments: payments,
       expenses: expenses,
       incomes: incomes,
+      budgets: budgets,
       fileName: fileName,
     );
   }
@@ -44,6 +50,7 @@ class ExportService {
     final payments = await _paymentRepository.getAllPayments();
     final expenses = await _expenseRepository.getAllExpenses();
     final incomes = await _incomeRepository.getAllIncomes();
+    final budgets = await _budgetRepository.getAllBudgets();
     
     final fileName = 'export_${DateTime.now().millisecondsSinceEpoch}';
     
@@ -51,6 +58,7 @@ class ExportService {
       payments: payments,
       expenses: expenses,
       incomes: incomes,
+      budgets: budgets,
       fileName: fileName,
     );
   }
