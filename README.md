@@ -1,4 +1,4 @@
-# smart_expenses_plan
+# currencyconverter / smart_expenses_plan
 
 A new Flutter project.
 
