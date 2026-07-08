@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:smart_expenses_plan/core/constants/colors.dart';
 import 'package:smart_expenses_plan/presentation/widgets/common/custom_button.dart';
 import 'package:smart_expenses_plan/presentation/widgets/common/custom_text_field.dart';
+import 'package:smart_expenses_plan/services/currency_service.dart';
+import 'package:intl/intl.dart';
 
 class CurrencyConverter extends StatefulWidget {
   const CurrencyConverter({super.key});
@@ -11,61 +13,134 @@ class CurrencyConverter extends StatefulWidget {
 }
 
 class _CurrencyConverterState extends State<CurrencyConverter> {
-  final TextEditingController _tzsController = TextEditingController();
-  final TextEditingController _usdController = TextEditingController();
+  final CurrencyService _currencyService = CurrencyService();
+  final TextEditingController _fromController = TextEditingController();
+  final TextEditingController _toController = TextEditingController();
   
-  double _exchangeRate = 2500.0; // Example rate: 1 USD = 2500 TZS
-  String _lastUpdated = 'Today, 10:30 AM';
-  bool _isLoading = false;
+  Map<String, double> _rates = {};
+  List<String> _currencies = [];
+  String _fromCurrency = 'USD';
+  String _toCurrency = 'TZS';
+  
+  String _lastUpdated = 'Loading...';
+  bool _isLoading = true;
 
   @override
-  void dispose() {
-    _tzsController.dispose();
-    _usdController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _loadRates();
   }
 
-  void _convertTZStoUSD(String value) {
+  Future<void> _loadRates() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    final rates = await _currencyService.getRates();
+    final lastUpdated = await _currencyService.getLastUpdated();
+    
+    setState(() {
+      _rates = rates;
+      _currencies = rates.keys.toList()..sort();
+      
+      // Ensure selected currencies exist in the list
+      if (!_currencies.contains(_fromCurrency)) {
+        _fromCurrency = _currencies.isNotEmpty ? _currencies.first : 'USD';
+      }
+      if (!_currencies.contains(_toCurrency)) {
+        _toCurrency = _currencies.length > 1 ? _currencies[1] : (_currencies.isNotEmpty ? _currencies.first : 'TZS');
+      }
+
+      if (lastUpdated != null) {
+        _lastUpdated = DateFormat('MMM d, y, h:mm a').format(lastUpdated);
+      } else {
+        _lastUpdated = 'Never';
+      }
+      _isLoading = false;
+      
+      // Recalculate if there's a value
+      if (_fromController.text.isNotEmpty) {
+        _convertFromToTo(_fromController.text);
+      }
+    });
+  }
+
+  double get _currentRate {
+    if (_rates.isEmpty || !_rates.containsKey(_fromCurrency) || !_rates.containsKey(_toCurrency)) {
+      return 1.0;
+    }
+    // All rates are relative to USD.
+    // If USD to EUR is 0.9, and USD to TZS is 2500, then EUR to TZS is 2500 / 0.9
+    final fromRate = _rates[_fromCurrency]!;
+    final toRate = _rates[_toCurrency]!;
+    return toRate / fromRate;
+  }
+
+  void _convertFromToTo(String value) {
     if (value.isEmpty) {
-      _usdController.text = '';
+      _toController.text = '';
       return;
     }
     
     try {
-      double tzs = double.parse(value);
-      double usd = tzs / _exchangeRate;
-      _usdController.text = usd.toStringAsFixed(2);
+      double fromValue = double.parse(value);
+      double toValue = fromValue * _currentRate;
+      _toController.text = toValue.toStringAsFixed(2);
     } catch (e) {
       // Invalid input
     }
   }
 
-  void _convertUSDtoTZS(String value) {
+  void _convertToToFrom(String value) {
     if (value.isEmpty) {
-      _tzsController.text = '';
+      _fromController.text = '';
       return;
     }
     
     try {
-      double usd = double.parse(value);
-      double tzs = usd * _exchangeRate;
-      _tzsController.text = tzs.toStringAsFixed(0);
+      double toValue = double.parse(value);
+      double fromValue = toValue / _currentRate;
+      _fromController.text = fromValue.toStringAsFixed(2);
     } catch (e) {
       // Invalid input
     }
   }
 
   void _swapCurrencies() {
-    String tzs = _tzsController.text;
-    String usd = _usdController.text;
-    
-    _tzsController.text = usd;
-    _usdController.text = tzs;
+    setState(() {
+      final tempCur = _fromCurrency;
+      _fromCurrency = _toCurrency;
+      _toCurrency = tempCur;
+      
+      final tempVal = _fromController.text;
+      _fromController.text = _toController.text;
+      _toController.text = tempVal;
+      
+      if (_fromController.text.isNotEmpty) {
+        _convertFromToTo(_fromController.text);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _fromController.dispose();
+    _toController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    if (_isLoading) {
+      return Container(
+        color: isDark ? AppColors.darkBackground : Colors.white,
+        child: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
 
     return Container(
       color: isDark ? AppColors.darkBackground : Colors.white,
@@ -102,7 +177,7 @@ class _CurrencyConverterState extends State<CurrencyConverter> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          '1 USD = ${_exchangeRate.toStringAsFixed(0)} TZS',
+                          '1 $_fromCurrency = ${_currentRate.toStringAsFixed(2)} $_toCurrency',
                           style: const TextStyle(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w600,
@@ -136,74 +211,21 @@ class _CurrencyConverterState extends State<CurrencyConverter> {
 
           const SizedBox(height: 24),
 
-          // TZS Input
-          Card(
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.money,
-                          color: AppColors.primary,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Text(
-                        'Tanzanian Shilling',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Text(
-                          'TZS',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _tzsController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      hintText: 'Enter amount in TZS',
-                      prefixIcon: const Icon(Icons.attach_money),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onChanged: _convertTZStoUSD,
-                  ),
-                ],
-              ),
-            ),
+          // From Input
+          _buildCurrencyCard(
+            title: 'From',
+            selectedCurrency: _fromCurrency,
+            controller: _fromController,
+            onCurrencyChanged: (val) {
+              if (val != null) {
+                setState(() {
+                  _fromCurrency = val;
+                  _convertFromToTo(_fromController.text);
+                });
+              }
+            },
+            onValueChanged: _convertFromToTo,
+            color: AppColors.primary,
           ),
 
           // Swap Button
@@ -225,121 +247,30 @@ class _CurrencyConverterState extends State<CurrencyConverter> {
             ),
           ),
 
-          // USD Input
-          Card(
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.warning.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.attach_money,
-                          color: AppColors.warning,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Text(
-                        'US Dollar',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Text(
-                          'USD',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _usdController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      hintText: 'Enter amount in USD',
-                      prefixIcon: const Icon(Icons.attach_money),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onChanged: _convertUSDtoTZS,
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          // Quick Conversion Examples
-          Card(
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Quick Examples',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _buildQuickExample('100 USD', '250,000 TZS'),
-                      _buildQuickExample('50 USD', '125,000 TZS'),
-                      _buildQuickExample('20 USD', '50,000 TZS'),
-                      _buildQuickExample('10 USD', '25,000 TZS'),
-                      _buildQuickExample('5 USD', '12,500 TZS'),
-                      _buildQuickExample('1 USD', '2,500 TZS'),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+          // To Input
+          _buildCurrencyCard(
+            title: 'To',
+            selectedCurrency: _toCurrency,
+            controller: _toController,
+            onCurrencyChanged: (val) {
+              if (val != null) {
+                setState(() {
+                  _toCurrency = val;
+                  _convertToToFrom(_toController.text);
+                });
+              }
+            },
+            onValueChanged: _convertToToFrom,
+            color: AppColors.warning,
           ),
 
           const SizedBox(height: 24),
 
           // Update Rate Button
           CustomButton(
-            text: 'Update Exchange Rate',
-            onPressed: _showUpdateRateDialog,
-            icon: Icons.update,
+            text: 'Refresh Rates',
+            onPressed: _loadRates,
+            icon: Icons.refresh,
             isFullWidth: true,
           ),
 
@@ -349,86 +280,74 @@ class _CurrencyConverterState extends State<CurrencyConverter> {
     );
   }
 
-  Widget _buildQuickExample(String usd, String tzs) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark
-            ? AppColors.darkSurface
-            : Colors.grey[100],
-        borderRadius: BorderRadius.circular(8),
+  Widget _buildCurrencyCard({
+    required String title,
+    required String selectedCurrency,
+    required TextEditingController controller,
+    required ValueChanged<String?> onCurrencyChanged,
+    required ValueChanged<String> onValueChanged,
+    required Color color,
+  }) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: Column(
-        children: [
-          Text(
-            usd,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              color: AppColors.warning,
-            ),
-          ),
-          Text(
-            tzs,
-            style: TextStyle(
-              fontSize: 12,
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? AppColors.darkSubtext
-                  : Colors.grey[600],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showUpdateRateDialog() {
-    final controller = TextEditingController(text: _exchangeRate.toString());
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Update Exchange Rate'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('1 USD = ? TZS'),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.monetization_on,
+                    color: color,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const Spacer(),
+                DropdownButton<String>(
+                  value: selectedCurrency,
+                  items: _currencies
+                      .map((e) => DropdownMenuItem(
+                            value: e,
+                            child: Text(e),
+                          ))
+                      .toList(),
+                  onChanged: onCurrencyChanged,
+                  underline: const SizedBox(),
+                ),
+              ],
+            ),
             const SizedBox(height: 16),
             TextField(
               controller: controller,
-              keyboardType: TextInputType.number,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: InputDecoration(
-                labelText: 'Exchange Rate',
+                hintText: 'Enter amount',
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
+              onChanged: onValueChanged,
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              setState(() {
-                _exchangeRate = double.parse(controller.text);
-                _lastUpdated = 'Just now';
-                
-                // Recalculate if there are values
-                if (_tzsController.text.isNotEmpty) {
-                  _convertTZStoUSD(_tzsController.text);
-                }
-                if (_usdController.text.isNotEmpty) {
-                  _convertUSDtoTZS(_usdController.text);
-                }
-              });
-              Navigator.pop(context);
-            },
-            child: const Text('Update'),
-          ),
-        ],
       ),
     );
   }
